@@ -1,0 +1,17 @@
+{
+  "appId": "com.gardenbooks.app",
+  "appName": "GardenBooks",
+  "webDir": "www",
+  "backgroundColor": "#faf8f3",
+  "android": {
+    "backgroundColor": "#faf8f3",
+    "adjustMarginsForEdgeToEdge": "auto"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#fffdf8",
+      "overlaysWebView": false
+    }
+  }
+}

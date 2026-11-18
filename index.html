@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="color-scheme" content="light only">
+<title>GardenBooks</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#fffdf8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GardenBooks">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+<link href="fonts/newsreader.css" rel="stylesheet">
+<style>
+:root{
+  /* Layout idea: light, flat, warm cream garden journal. Sticky header, uniform grid of plant cards, bento tiles on the plant page, a small shelf of seed envelopes. Light theme only. */
+  --paper:#f7f4ec;
+  --card:#ffffff;
+  --bar:#fffdf8;
+  --ink:#3d3929;
+  --muted:#6f6757;
+  --line:#e0d8c8;
+  --line-strong:#cfc5b1;
+  --shadow:0 1px 2px rgba(61,57,41,.07), 0 3px 10px rgba(61,57,41,.06);
+  --leaf:#7d8a5a;
+  --accent:#c4683f;
+  --soft:#ebe5d8;
+  --mint:#e5e9d6; --lav:#ece3d3; --butter:#f6eacd; --blush:#f5e1d3;
+  --st-sow:#cdbca6; --st-sprout:#dcd6ad; --st-seedling:#bcbc8e; --st-grow:#8f9466;
+  --st-flower:#e3c07e; --st-fruit:#d99a72; --st-harvest:#c4683f;
+  --display:"Newsreader", Georgia, "Times New Roman", serif;
+  --body:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --r:20px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper)}
+html{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,.sheet::-webkit-scrollbar,.picker::-webkit-scrollbar{display:none;width:0;height:0}
+.sheet,.picker{scrollbar-width:none}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+input,textarea,select{-webkit-user-select:text;user-select:text}
+img,svg{-webkit-user-drag:none}
+body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--leaf);outline-offset:2px;border-radius:8px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.15;font-weight:500;letter-spacing:-.01em}
+.app{max-width:600px;margin:0 auto;padding:0 16px 48px}
+
+/* sticky header */
+.top{position:sticky;top:0;z-index:10;background:var(--bar);margin:0 -16px 12px;padding:10px 16px;border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(61,57,41,.06);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.top-r{display:flex;align-items:center;gap:8px}
+.top h1{font-size:25px;white-space:nowrap;font-weight:700;letter-spacing:-.015em}
+@media (max-width:360px){.top h1{font-size:21px}.switch-view button{padding:6px 9px}}
+.top h1 i{font-weight:700;font-style:normal;color:var(--accent)}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center}
+.icon-btn svg{width:18px;height:18px}
+.switch-view{display:inline-grid;grid-template-columns:1fr 1fr;height:42px;align-items:stretch;background:var(--soft);border:1px solid var(--line);border-radius:99px;padding:3px;gap:3px}
+.switch-view button{display:flex;align-items:center;justify-content:center;border:0;background:transparent;border-radius:99px;padding:0 13px;font-size:13.5px;font-weight:500;color:var(--muted);min-height:0;transition:background .2s,color .2s}
+.switch-view button svg{width:17px;height:17px}
+.switch-view button[aria-pressed="true"]{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(61,57,41,.14)}
+
+.btn{border:1px solid var(--line-strong);background:var(--card);border-radius:99px;padding:9px 18px;font-weight:600;font-size:15px;min-height:42px}
+.btn.green{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.danger{color:var(--accent);border-color:var(--accent);background:transparent}
+.note{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--butter);border-radius:16px;padding:12px 14px;margin-bottom:14px;font-size:15px}
+.note p{margin:0;flex:1 1 220px}
+.muted{color:var(--muted)}
+.no-top{height:calc(12px + env(safe-area-inset-top))}
+.page-title{font-size:30px;margin:4px 0 14px}
+
+/* garden: plain grid */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (min-width:520px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.gcard{border:1px solid var(--line);box-shadow:var(--shadow);background:var(--card);border-radius:var(--r);padding:0;text-align:left;display:flex;flex-direction:column;overflow:hidden}
+.gcard .art{background:color-mix(in srgb, var(--pk) 17%, var(--card));border-bottom:1px solid color-mix(in srgb, var(--pk) 25%, var(--card));display:grid;place-items:end center;padding-top:8px;aspect-ratio:1/0.9}
+.gcard .art svg{width:88%;height:auto;display:block}
+.gcard .body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px}
+.gcard h3{font-size:20px}
+.meta{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;align-self:flex-start}
+.chip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.next{font-size:13.5px}
+.warn{color:var(--accent);font-weight:600}
+.mini-wrap{position:relative;padding:3px 0}
+.mini-tl{display:flex;height:6px;border-radius:99px;overflow:hidden;gap:2px}
+.mini-tl span{display:block;height:100%}
+.mini-wrap .now{position:absolute;top:0;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--card);border:2.5px solid var(--ink)}
+.add-card{border:1.5px dashed var(--line);background:transparent;border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted);font-size:15px;min-height:200px}
+.add-card svg{width:26px;height:26px;color:var(--accent)}
+.empty{background:var(--card);box-shadow:var(--shadow);border:1px solid var(--line);border-radius:var(--r);padding:28px 20px;text-align:center}
+.empty h2{font-size:26px;margin-bottom:6px}
+.empty p{color:var(--muted);margin:0 0 16px}
+
+/* plant page: bento */
+.back{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--ink);font-weight:600;font-size:15px;padding:4px 2px;margin-bottom:10px}
+.back svg{width:18px;height:18px}
+.bento{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;grid-auto-flow:dense}
+.tile{border-radius:var(--r);padding:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px;min-width:0}
+.t2{grid-column:span 2}.t4{grid-column:span 4}
+.tile.tint{border-color:color-mix(in srgb, var(--ink) 12%, transparent)}
+.mint{background:var(--mint)}.lav{background:var(--lav)}.butter{background:var(--butter)}.blush{background:var(--blush)}
+.eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.eyebrow.ic{display:flex;align-items:center;gap:7px;color:var(--ink);letter-spacing:.05em}
+.eyebrow.ic svg{width:17px;height:17px;flex:none;color:var(--muted)}
+.huge{font-family:var(--display);font-size:54px;font-weight:400;line-height:.95;font-variant-numeric:lining-nums tabular-nums}
+.sub{font-size:14px;color:var(--muted)}
+.tile .big-line,.big-line{margin:0;font-family:var(--display);font-size:24px;line-height:1.15;font-weight:500}
+.hero{display:grid;grid-template-columns:44% 1fr;gap:14px;align-items:center;background:color-mix(in srgb, var(--pk) 16%, var(--card));border-color:color-mix(in srgb, var(--pk) 30%, var(--card))}
+.hero .art{display:grid;place-items:end center}
+.hero .art svg{width:100%;max-width:210px;height:auto;display:block}
+.hero h2{font-size:32px}
+.hero .kicker{margin:0;font-size:14px;color:var(--muted)}
+.hero .acts{display:flex;gap:8px;margin-top:10px}
+@media (max-width:380px){.hero{grid-template-columns:1fr}.hero .art svg{max-width:180px;margin:0 auto}}
+.tip-tile{flex-direction:row;align-items:flex-start;gap:12px}
+.tip-tile svg{width:20px;height:20px;flex:none;color:var(--leaf);margin-top:2px}
+.tip-tile p{margin:0;font-size:15px;line-height:1.55}
+.tile h3{font-size:22px;margin-bottom:2px}
+.tile p{margin:0;font-size:15px;line-height:1.5}
+.move-tile{flex-direction:row;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.move-tile p{flex:1 1 200px;font-size:15px}
+
+.tl-wrap{position:relative;padding:24px 0 22px}
+.tl{display:flex;height:14px;border-radius:99px;overflow:hidden;gap:3px}
+.tl span{display:block;height:100%}
+.tl-now{position:absolute;top:16px;height:30px;width:2px;background:var(--ink);transform:translateX(-1px)}
+.tl-now b{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:12px;white-space:nowrap}
+.tl-pin{position:absolute;top:44px;transform:translateX(-50%);font-size:12px;color:var(--muted);white-space:nowrap}
+.tl-anim .tl{animation:fill 1.1s cubic-bezier(.3,.7,.3,1) both}
+.tl-anim .tl-now{animation:slide 1.1s cubic-bezier(.3,.7,.3,1) both}
+@keyframes fill{from{clip-path:inset(0 100% 0 0 round 99px);opacity:0}to{clip-path:inset(0 0 0 0 round 99px);opacity:1}}
+@keyframes slide{from{left:0;opacity:0}}
+.count-anim{animation:fadein 1.1s ease-out both}
+/* sheet motion */
+.backdrop{animation:bdIn .24s ease both}
+.backdrop .sheet{animation:shIn .32s cubic-bezier(.2,.85,.25,1) both}
+.backdrop.closing{animation:bdOut .22s ease both;pointer-events:none}
+.backdrop.closing .sheet{animation:shOut .22s cubic-bezier(.4,0,.8,.4) both}
+@keyframes bdIn{from{background:rgba(40,36,26,0)}}
+@keyframes bdOut{to{background:rgba(40,36,26,0)}}
+@keyframes shIn{from{transform:translateY(100%)}}
+@keyframes shOut{to{transform:translateY(100%)}}
+@media (prefers-reduced-motion: reduce){.backdrop,.backdrop .sheet{animation:none}}
+
+/* own plants */
+.cphoto{display:block;width:100%;height:100%;object-fit:cover}
+.gcard .art{position:relative}
+.gcard .art .cphoto,.pk-art .cphoto{position:absolute;inset:0}
+.pk-art{position:relative}
+.hero{position:relative;overflow:hidden}
+.hero.photo{min-height:210px}
+.hero.photo .art{position:absolute;top:0;bottom:0;left:0;width:64%;display:block}
+.hero.photo .art .cphoto{-webkit-mask-image:linear-gradient(to right,#000 30%,transparent 88%);mask-image:linear-gradient(to right,#000 30%,transparent 88%)}
+.hero.photo > div:last-child{grid-column:2;position:relative}
+@media (max-width:380px){.hero.photo{grid-template-columns:44% 1fr}}
+.own-note{margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.hero-acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.own-new{border:1.5px dashed var(--line-strong) !important;background:transparent !important;box-shadow:none !important;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-weight:600;font-size:14px;padding:16px 8px;text-align:center;min-height:140px}
+.own-new svg{width:26px;height:26px;color:var(--accent)}
+.link-btn{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:var(--accent);font-weight:600;padding:10px 0 0;font-size:14.5px}
+.link-btn svg,.btn svg{width:16px;height:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.seg label .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.field small{display:block}
+.ph{width:56px;height:56px;border-radius:12px;border:1.5px dashed var(--line-strong);display:grid;place-items:center;overflow:hidden;cursor:pointer;flex:none;background:var(--card);color:var(--muted)}
+.ph.big{width:96px;height:96px}
+.ph svg{width:22px;height:22px}
+.ph.has{border-style:solid;border-color:var(--line)}
+.ph img{width:100%;height:100%;object-fit:cover}
+.cstages{list-style:none;margin:8px 0 10px;padding:0;display:flex;flex-direction:column;gap:8px}
+.cst{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px}
+.cst-f{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.cst-f .input{min-height:38px;padding:7px 10px}
+.cst-d{display:flex;align-items:center;gap:8px}
+.cst-d .input{width:76px}
+.cst-d span{font-size:13px;color:var(--muted)}
+.cst .x{width:34px;height:34px}
+
+/* card styles */
+body.cards-flat,body.cards-outline{--shadow:none}
+body.cards-flat :is(.gcard,.tile,.packet,.empty,.set-group,.opts,.ft-n,.dd,.icon-btn){border-color:transparent}
+body.cards-flat .tile.tint,body.cards-flat .hero,body.cards-flat .crop-hero{border-color:transparent}
+body.cards-flat .top{box-shadow:none}
+body.cards-outline :is(.gcard,.tile,.packet,.empty,.set-group,.opts){border-color:var(--line-strong)}
+body.cards-outline .top{box-shadow:none}
+body.cards-shadow .gcard,body.cards-shadow .tile:not(.tint):not(.hero):not(.crop-hero),body.cards-shadow .set-group{border-color:color-mix(in srgb, var(--line) 60%, transparent)}
+#app.page-fwd > :not(.top){animation:pageFwd .26s cubic-bezier(.2,.7,.3,1) both}
+#app.page-back > :not(.top){animation:pageBack .26s cubic-bezier(.2,.7,.3,1) both}
+#app.page-tab > :not(.top){animation:pageTab .22s ease-out both}
+@keyframes pageFwd{from{opacity:0;transform:translateX(18px)}}
+@keyframes pageBack{from{opacity:0;transform:translateX(-18px)}}
+@keyframes pageTab{from{opacity:0;transform:translateY(6px)}}
+@media (prefers-reduced-motion: reduce){#app[class*=page-] > *{animation:none !important}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.tl-wrap.no-today{padding-top:8px}
+.tl-wrap.no-pin{padding-bottom:2px}
+.tl-wrap.no-pin + .tl-ends{margin-top:8px}
+body.noanim .plant-svg .sway{animation:none}
+@media (prefers-reduced-motion: reduce){.tl-anim .tl,.tl-anim .tl-now,.count-anim{animation:none}}
+.tl-ends{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:16px}
+.stages{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.stages li{display:grid;grid-template-columns:12px 1fr auto;column-gap:10px;align-items:baseline;padding:7px 10px;border-radius:12px;font-size:14.5px}
+.stages .dot{width:10px;height:10px;border-radius:50%;align-self:center}
+.stages .sl{font-weight:600}
+.stages .sd{color:var(--muted);text-align:right;font-size:13.5px}
+.stages .sw{grid-column:2;color:var(--muted);font-size:12.5px}
+.stages li.now{background:var(--butter)}
+.stages li.done{opacity:.42}
+.stages li.done .sl{font-weight:500}
+.stages li.event .sl{color:var(--leaf)}
+.stages li.event .dot{background:none;border:2px dashed var(--leaf)}
+.lib-link{flex-direction:row;align-items:center;gap:12px;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.lib-link > svg:first-child{width:22px;height:22px;color:var(--leaf);flex:none}
+.lib-link span{flex:1;display:flex;flex-direction:column}
+.lib-link b{font-size:15.5px}
+.lib-link small{font-size:13.5px;color:var(--muted)}
+.lib-link > svg:last-child{width:18px;height:18px;transform:rotate(180deg);color:var(--muted);flex:none}
+.danger-zone{margin-top:18px;display:flex;gap:8px;justify-content:center}
+
+/* filter chips */
+.filters{display:flex;gap:8px;align-items:center;margin:0 0 12px}
+.dd{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;column-gap:6px;align-items:center;border:1px solid var(--line-strong);background:var(--card);border-radius:12px;padding:6px 10px 6px 12px;min-height:42px;flex:1 1 0;min-width:0;text-align:left}
+.dd span{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;grid-column:1;line-height:1.2}
+.dd b{font-size:14.5px;font-weight:600;grid-column:1;min-width:0;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd svg{width:16px;height:16px;color:var(--muted);grid-column:2;grid-row:1 / span 2}
+.dd.on{border-color:var(--leaf);background:color-mix(in srgb, var(--leaf) 12%, var(--card))}
+.dd-clear{border:0;background:none;color:var(--accent);font-weight:600;font-size:14px;padding:8px 4px;flex:none}
+.opts{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:6px}
+.opt{display:flex;align-items:center;gap:12px;border:0;background:none;padding:14px;text-align:left;font-size:16px}
+.opt + .opt{border-top:1px solid var(--line)}
+.opt i{width:12px;height:12px;border-radius:50%;flex:none}
+.opt i.all{background:conic-gradient(#c4683f 0 25%,#6f9a4a 0 50%,#b9822f 0 75%,#4f5f86 0)}
+.opt span{flex:1}
+.opt small{color:var(--muted);font-size:13.5px}
+.opt svg{width:18px;height:18px;color:var(--leaf)}
+.opt[aria-pressed="true"]{font-weight:600}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;border:1px solid var(--line-strong);background:var(--card);border-radius:99px;padding:6px 13px;font-size:14px;font-weight:600;color:var(--ink);min-height:36px;white-space:nowrap}
+.chips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.from-pick{flex:none;position:relative;display:flex;align-items:center}
+.from-pick select{appearance:none;-webkit-appearance:none;border:1px solid var(--line-strong);background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f6757' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 9px center/13px;border-radius:99px;padding:6px 28px 6px 12px;font-size:14px;font-weight:600;min-height:36px;color:var(--ink)}
+.from-pick.on select{background-color:var(--leaf);border-color:var(--leaf);color:#fff}
+.chips.sub button{font-size:13px;font-weight:500;min-height:32px;padding:4px 11px;background:transparent;color:var(--muted)}
+.chips.sub button[aria-pressed="true"]{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.chips .lbl{flex:none;align-self:center;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-right:2px}
+.chips b{font-weight:500;opacity:.65;margin-left:5px;font-size:12.5px}
+.no-match{grid-column:1/-1;text-align:center;color:var(--muted);padding:26px 10px;border:1.5px dashed var(--line-strong);border-radius:var(--r)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tags .lv{font-size:12.5px;padding:3px 10px}
+.tags i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.crop-pk .tags{margin-top:10px}
+.tags span:not(.lv){font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--card);border:1px solid var(--line-strong)}
+.picker .hide{display:none}
+.picker-chips{margin:0 -16px 6px}
+
+/* family tree */
+.ft summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+.ft summary::-webkit-details-marker{display:none}
+.ft summary h3{margin:0}
+.ft summary > svg{width:20px;height:20px;margin-left:auto;color:var(--muted);transition:transform .2s}
+.ft[open] summary > svg{transform:rotate(180deg)}
+.ft-key{display:flex;flex-wrap:wrap;gap:6px 14px;margin:12px 0 2px;font-size:12.5px;color:var(--muted)}
+.ft-key span{display:inline-flex;align-items:center;gap:6px}
+.ft-key .ft-arrow{width:18px}
+.ft-plus{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;flex:none}
+.ft-plus svg{width:14px;height:14px}
+.ft-key .ft-plus{width:18px;height:18px}.ft-key .ft-plus svg{width:11px;height:11px}
+.ft-group{display:flex;flex-wrap:wrap;gap:6px;padding:5px;border-radius:14px;background:var(--soft)}
+.ft-why.cross{background:color-mix(in srgb, var(--accent) 13%, var(--card))}
+.ft-why.cross .ft-plus{width:16px;height:16px}.ft-why.cross .ft-plus svg{width:10px;height:10px;color:#fff}
+.ft-rail{list-style:none;margin:10px 0 0;padding:0 0 0 22px;position:relative}
+.ft-rail:before{content:"";position:absolute;left:6px;top:10px;bottom:14px;width:2px;background:var(--line-strong);border-radius:2px}
+.ft-step{position:relative;padding-bottom:16px}
+.ft-step:before{content:"";position:absolute;left:-22px;top:3px;box-sizing:border-box;width:14px;height:14px;border-radius:50%;background:var(--card);border:2.5px solid var(--leaf)}
+.ft-step.cont{margin-top:-6px}.ft-step.cont:before{display:none}
+.ft-step:last-child{padding-bottom:4px}
+.ft-when{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;line-height:1.35}
+.ft-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px 4px}
+.ft-n{width:70px;background:#fbf9f4;border:1px solid var(--line);border-radius:12px;padding:6px 4px 7px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
+.ft-n svg{width:48px;height:48px;display:block}
+.ft-n b{font-size:12px;line-height:1.15;font-weight:600}
+.ft-n small{font-size:11px;color:var(--muted);line-height:1.25}
+.ft-n.me{border:2px solid var(--leaf);background:color-mix(in srgb, var(--leaf) 12%, var(--card))}
+.ft-tag{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#fff;background:var(--leaf);border-radius:99px;padding:1px 6px;margin-top:2px;white-space:nowrap}
+.ft-tag.pop{background:#f6ecd4;color:#8a6420}
+.ft-op{font-family:var(--body);font-weight:700;font-size:20px;line-height:1;color:var(--accent);padding:0 1px}
+.ft-why{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:4px 10px 4px 8px;border-radius:99px;background:color-mix(in srgb, var(--leaf) 14%, var(--card));font-size:13px;color:var(--ink)}
+.ft-why svg{width:14px;height:14px;color:var(--leaf);flex:none}
+.ft-why b{font-weight:600}
+.ft-arrow{width:24px;height:14px;color:var(--accent);flex:none}
+.ft-note{margin:8px 0 0 !important;font-size:14px !important;color:var(--muted);line-height:1.5}
+.ft-sub{font-family:var(--display);font-size:19px;font-weight:500;margin:14px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+.ft-others{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.ft-others .ft-n{width:auto}
+.seedbox{display:grid;grid-template-columns:1fr;gap:8px}
+.seedbox > div{background:#fbf9f4;border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.seedbox p{margin:0;font-size:14.5px;line-height:1.5}
+.grade{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-top:8px}
+.anim-on .ft-step{animation:ftIn .45s ease both;animation-delay:calc(.08s * var(--i, 0))}
+@keyframes ftIn{from{opacity:0;transform:translateY(8px)}}
+
+/* seed packet slides toward you on the library page */
+.anim-on .crop-pk .packet{animation:packIn .6s cubic-bezier(.3,.7,.3,1) both;transform-origin:50% 0}
+@keyframes packIn{0%{opacity:0;transform:translateY(-70px) rotate(-7deg) scale(.86);box-shadow:0 30px 40px rgba(61,57,41,.25)}
+  55%{opacity:1}75%{transform:translateY(4px) rotate(1deg) scale(1.02)}100%{transform:none}}
+@media (prefers-reduced-motion: reduce){.anim-on .ft-step,.anim-on .crop-pk .packet{animation:none}}
+
+/* library shelf */
+.shelf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 14px}
+@media (min-width:520px){.shelf{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:520px){body.compact .grid,.shelf{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.pk-btn{border:0;background:none;padding:0;text-align:left;display:block;height:100%}
+.shelf .packet{height:100%}
+
+/* seed envelope */
+.packet{background-color:#fffdf9;background-image:repeating-linear-gradient(135deg, rgba(61,57,41,.045) 0 1px, transparent 1px 7px);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:3px 3px 6px 6px;overflow:hidden;display:flex;flex-direction:column;color:#2f2a25;position:relative}
+.pk-art{margin:14px 14px 0;aspect-ratio:1;border-radius:50%;background:color-mix(in srgb, var(--pk) 12%, #fffdf9);display:grid;place-items:end center;padding-top:16px;overflow:hidden;border:1px solid color-mix(in srgb, var(--pk) 22%, #fffdf9)}
+.pk-art svg{width:78%;height:auto;display:block}
+.pk-name{font-family:var(--display);font-weight:500;font-size:20px;line-height:1.05;text-align:center;margin:10px 8px 14px}
+.pk-local{flex:1;font-family:var(--display);font-style:italic;font-size:15px;color:var(--muted);text-align:center;margin-bottom:10px}
+.pk-band{display:flex;flex-direction:column;color:#fff;font-size:10px;letter-spacing:.1em;font-weight:600;text-transform:uppercase}
+.pk-band span{text-align:center;padding:5px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.packet.small .pk-local{display:none}
+.packet.small .pk-art{margin:8px 8px 0}
+.packet.small .pk-name{font-size:13.5px;margin:4px 3px 4px;height:2.3em;display:flex;align-items:center;justify-content:center;line-height:1.1;overflow:hidden;flex:1}
+.packet.small .pk-band{font-size:7px;letter-spacing:.04em}.packet.small .pk-band span{padding:2px 1px}
+.picker > div{display:flex}.picker label{width:100%;height:100%}.picker .packet{height:100%}
+
+/* sheets */
+.backdrop{position:fixed;inset:0;background:rgba(40,36,26,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--paper);width:100%;max-width:600px;border-radius:24px 24px 0 0;padding:10px 16px calc(20px + env(safe-area-inset-bottom));max-height:92%;overflow:auto}
+.sheet h2{font-size:28px;margin:0}
+.grab{width:40px;height:4px;border-radius:99px;background:var(--line-strong);margin:0 auto 12px}
+.sheet .lead{color:var(--muted);margin:0 0 16px;font-size:15px}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.sheet-head + .lead{margin-top:-8px}
+.x{background:var(--card);border:1px solid var(--line-strong);border-radius:50%;width:40px;height:40px;display:grid;place-items:center;flex:none;padding:0}
+.x svg{width:16px;height:16px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.field label,.field .lbl{font-weight:600;font-size:14.5px}
+.field small{color:var(--muted);font-size:13px}
+.input{border:1px solid var(--line-strong);background:var(--card);border-radius:12px;padding:10px 12px;width:100%;min-height:44px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-height:330px;overflow:auto;padding:2px}
+@media (max-width:400px){.picker{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.picker input,.seg input{position:absolute;opacity:0;pointer-events:none}
+.picker label{cursor:pointer;border-radius:8px;padding:3px;border:2px solid transparent;display:block}
+.picker input:checked + label{border-color:var(--ink)}
+.picker input:focus-visible + label,.seg input:focus-visible + label{outline:2px solid var(--leaf);outline-offset:2px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label{flex:1 1 auto;text-align:center;padding:8px 12px;font-size:14.5px;cursor:pointer;border-radius:99px;border:1px solid var(--line-strong);background:var(--card)}
+.seg input:checked + label{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.sheet-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+.sec{font-family:var(--display);font-size:22px;font-weight:500;margin:20px 0 6px;padding-top:14px;border-top:1px solid var(--line)}
+.crop-sheet-top{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:start;margin-bottom:14px}
+.crop-sheet-top h2{font-size:30px}
+.care-mini{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-direction:column;gap:10px;font-size:14.5px;line-height:1.4}
+.care-mini li{display:grid;grid-template-columns:18px 1fr;gap:9px;align-items:start}
+.care-mini svg{width:17px;height:17px;color:var(--muted);margin-top:1px}
+.crop-local{margin:2px 0 0;font-family:var(--display);font-style:italic;font-size:17px;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.method-tip{display:flex;gap:8px;align-items:flex-start;margin:4px 0 0;padding:10px 12px;background:var(--butter);border-radius:12px;font-size:14px;line-height:1.5;color:var(--ink)}
+.method-tip svg{width:17px;height:17px;flex:none;color:var(--accent);margin-top:1px}
+.set-group{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden;box-shadow:var(--shadow)}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px}
+.set-row + .set-row{border-top:1px solid var(--line)}
+.set-row b{display:block;font-size:15.5px}
+.set-row span{display:block;font-size:13.5px;color:var(--muted);margin-top:2px}
+.toggle{position:relative;flex:none;width:48px;height:28px;cursor:pointer}
+.toggle input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.set-row .toggle span{margin:0}
+.toggle input + span{position:absolute;inset:0;background:var(--line-strong);border-radius:99px;transition:background .2s}
+.toggle input + span::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle input:checked + span{background:var(--leaf)}
+.toggle input:checked + span::after{transform:translateX(20px)}
+.toggle input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.set-col{display:flex;flex-direction:column;gap:2px;padding:14px}
+.set-col + .set-col{border-top:1px solid var(--line)}
+.set-col b{font-size:15.5px}
+.set-col > span{font-size:13.5px;color:var(--muted);margin-bottom:8px}
+.crop-hero{display:grid;grid-template-columns:42% 1fr;gap:16px;align-items:start;background:color-mix(in srgb, var(--pk) 10%, var(--card));border-color:color-mix(in srgb, var(--pk) 26%, var(--card))}
+.crop-hero h2{font-size:30px}
+@media (max-width:380px){.crop-hero{grid-template-columns:1fr}.crop-pk{max-width:200px}}
+body.compact .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+body.compact .gcard{border-radius:14px}
+body.compact .gcard .body{padding:8px 9px 10px;gap:3px}
+body.compact .gcard h3{font-size:15.5px}
+body.compact .gcard .meta,body.compact .gcard .chip{font-size:11.5px}
+body.compact .gcard .mini-wrap,body.compact .gcard .next{display:none}
+body.compact .add-card{min-height:120px;font-size:13px}
+.app .shelf{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px}
+.app .shelf .pk-name{font-size:14.5px;margin:6px 4px 11px;line-height:1.1}
+.app .shelf .pk-local{display:none}
+.app .shelf .pk-art{margin:8px 8px 0}
+.app .shelf .pk-band{font-size:8px;letter-spacing:.05em}.app .shelf .pk-band span{padding:3px 2px}
+.info-list{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column}
+.info-list li{display:grid;grid-template-columns:20px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.info-list li:first-child{border-top:0;padding-top:4px}
+.info-list li > div{min-width:0}
+.info-list li > svg{width:19px;height:19px;color:var(--muted);margin-top:2px}
+.il-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-weight:600;font-size:15px;margin-bottom:3px}
+.info-list p{margin:0;font-size:14.5px;line-height:1.5;color:var(--ink)}
+.lv{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px}
+.lv-good{background:#e8eedc;color:#55663a}
+.lv-mid{background:#f6ecd4;color:#8a6420}
+.lv-hard{background:#f5e2d8;color:#a24e2c}
+.lv-plain{background:var(--soft);color:var(--ink)}
+.fine{font-size:12.5px;color:var(--muted);text-align:center;margin:22px 0 4px}
+.care-list{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:14.5px}
+.care-list dt{color:var(--muted)}
+.care-list dd{margin:0}
+@media (max-width:380px){.crop-sheet-top{grid-template-columns:120px 1fr}}
+
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(16px);background:var(--ink);color:var(--paper);padding:9px 18px;border-radius:99px;font-size:14.5px;opacity:0;pointer-events:none;transition:.25s;z-index:30;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.plant-svg .sway{transform-origin:60px 110px;animation:rise .7s cubic-bezier(.2,.8,.3,1)}
+@keyframes rise{from{transform:scale(.93,.85);opacity:.5}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.plant-svg .sway{animation:none}#toast{transition:none}}
+</style>
+</head>
+<body>
+<main class="app" id="app"></main>
+<div id="sheet-root"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>window.GB_STANDALONE = true;</script>
+<script>
+/* ================= Crops (days from sowing or planting; Malaysia's warm, wet climate) ================= */
+const S = (key,label,start,end,tip) => ({key,label,start,end,tip});
+const CROPS = {
+  tomato:{name:'Cherry Tomato',local:'',start:'seed',band:'Seeds',packet:'#c4683f',method:'tray',methods:['tray','pot','ground'],
+    sun:'6–8 hours of direct sun',water:'Daily; keep soil evenly moist',pot:'25–30 cm pot with a stake',fertEvery:14,transplantDay:32,
+    visual:{leaf:'compound',flower:'#f2c335',fruit:'round',fruitColor:'#d8402c',maxH:88,stake:true},
+    stages:[
+      S('sow','Germination',0,7,'Keep the tray warm and the soil damp. Mist rather than pour so the seeds stay in place.'),
+      S('sprout','Sprouting',7,14,'Seed leaves are up. Give bright light now, or seedlings stretch tall and floppy.'),
+      S('seedling','Seedling',14,32,'True leaves are growing. Move to a pot once there are 2–4 true leaves and roots hold the soil plug.'),
+      S('grow','Vegetative',32,50,'Plant the stem deeper when you move it; buried stem grows extra roots. Add a stake now.'),
+      S('flower','Flowering',50,63,'Yellow flowers appear. Tap the stems each morning to help pollination.'),
+      S('fruit','Fruit set',63,80,'Green fruits are swelling. Water at the same time daily; uneven watering cracks fruit.'),
+      S('harvest','Harvest',80,130,'Pick when fully red and slightly soft. Picking often keeps the plant producing.')]},
+  chili:{name:"Bird's Eye Chili",local:'',start:'seed',band:'Seeds',packet:'#a4573f',method:'tray',methods:['tray','pot','ground'],
+    sun:'6+ hours of direct sun',water:'Daily in pots; let the top 1 cm dry',pot:'20–25 cm pot',fertEvery:14,transplantDay:45,
+    visual:{leaf:'oval',flower:'#f4f1e6',fruit:'chili',fruitColor:'#c9241b',maxH:78},
+    stages:[
+      S('sow','Germination',0,12,'Chili seed is slow. Up to two weeks is normal, so keep the soil warm and damp.'),
+      S('sprout','Sprouting',12,21,'Seed leaves open. Bright light keeps the stems short and strong.'),
+      S('seedling','Seedling',21,45,'Slow and steady. Move to a pot at 10–15 cm tall with 4–6 true leaves.'),
+      S('grow','Vegetative',45,70,'Pinch the tip once at 20 cm for a bushier plant with more chilies.'),
+      S('flower','Flowering',70,85,'Small white flowers. Dry soil now makes flowers drop, so keep watering steady.'),
+      S('fruit','Fruit set',85,100,'Chilies start green and turn red over about two weeks.'),
+      S('harvest','Harvest',100,240,'Pick green or red. Snip with scissors so the branch does not tear.')]},
+  eggplant:{name:'Eggplant',local:'',start:'seed',band:'Seeds',packet:'#86708a',method:'tray',methods:['tray','pot','ground'],
+    sun:'6–8 hours of direct sun',water:'Daily; deep watering',pot:'30 cm pot',fertEvery:14,transplantDay:35,
+    visual:{leaf:'round',flower:'#a77bc8',fruit:'eggplant',fruitColor:'#4a1f5a',maxH:72,leafColor:'#4d7f42',leafHi:'#78a85a'},
+    stages:[
+      S('sow','Germination',0,10,'Sow 0.5 cm deep and keep warm. Sprouts take 7–10 days.'),
+      S('sprout','Sprouting',10,18,'Move into bright light as soon as the seed leaves open.'),
+      S('seedling','Seedling',18,35,'Move to a pot once there are 4–5 true leaves.'),
+      S('grow','Vegetative',35,60,'Broad leaves fill out. Check the undersides for small pests.'),
+      S('flower','Flowering',60,72,'Pale purple flowers hang down. Each one can become a fruit.'),
+      S('fruit','Fruit set',72,85,'Fruits lengthen fast. Keep watering deep and even.'),
+      S('harvest','Harvest',85,180,'Pick while the skin is glossy. Dull skin means it is past its best.')]},
+  capsicum:{name:'Capsicum',local:'',start:'seed',band:'Seeds',packet:'#7d8a5a',method:'tray',methods:['tray','pot','ground'],
+    sun:'Morning sun, light afternoon shade',water:'Daily; never let it wilt',pot:'25–30 cm pot',fertEvery:14,transplantDay:42,
+    visual:{leaf:'oval',flower:'#f6f3ea',fruit:'bell',fruitColor:'#d23a2a',maxH:66,leafColor:'#3f7a36',leafHi:'#66a04c'},
+    stages:[
+      S('sow','Germination',0,12,'Slow to sprout. Keep the tray warm and evenly damp.'),
+      S('sprout','Sprouting',12,21,'Bright light now keeps seedlings compact.'),
+      S('seedling','Seedling',21,42,'Move to a pot at about 10 cm tall.'),
+      S('grow','Vegetative',42,70,'Shade it from the hottest afternoon sun. Heat stress drops flowers.'),
+      S('flower','Flowering',70,82,'Small white flowers. Steady watering helps them set fruit.'),
+      S('fruit','Fruit set',82,100,'Fruits start green. Leave them on to turn red and sweeter.'),
+      S('harvest','Harvest',100,200,'Cut, do not pull, with a bit of stem left on the fruit.')]},
+  cucumber:{name:'Cucumber',local:'',start:'seed',band:'Seeds',packet:'#5f7f4f',method:'ground',methods:['tray','pot','ground'],
+    sun:'Full sun',water:'Daily, more on hot days',pot:'30 cm pot with a trellis',fertEvery:10,transplantDay:14,
+    visual:{leaf:'round',leafScale:1.15,flower:'#f2c94c',fruit:'cucumber',fruitColor:'#3f6f30',maxH:90,trellis:true,leafColor:'#4f8a3c',leafHi:'#7cb35a'},
+    stages:[
+      S('sow','Germination',0,5,'Sow 2 cm deep. Cucumbers sprout fast in warm soil.'),
+      S('sprout','Sprouting',5,10,'Big seed leaves appear. Protect them from snails.'),
+      S('seedling','Seedling',10,18,'Move to its spot early; roots dislike being disturbed later.'),
+      S('grow','Vining',18,32,'Guide the tendrils onto a trellis or net so fruit hangs straight.'),
+      S('flower','Flowering',32,40,'Yellow flowers. Female flowers have a tiny cucumber behind the petals.'),
+      S('fruit','Fruit set',40,48,'Fruits grow quickly. Water deeply every day.'),
+      S('harvest','Harvest',48,75,'Pick at 15–20 cm while firm and green. Pick often so the vine keeps fruiting.')]},
+  pumpkin:{name:'Pumpkin',local:'',start:'seed',band:'Seeds',packet:'#c98a3a',method:'ground',methods:['pot','ground'],
+    sun:'Full sun',water:'Deep watering every 1–2 days, at the base',pot:'Ground with 2 m to sprawl',fertEvery:14,transplantDay:null,
+    potNote:'It needs a very large container (60 L or more) and room to sprawl.',
+    visual:{form:'sprawl',flower:'#f2b632',fruit:'pumpkin',fruitColor:'#e08a2e',leafColor:'#4f8a3c',leafHi:'#78ad55'},
+    stages:[
+      S('sow','Germination',0,6,'Sow 2–3 cm deep, two seeds per spot, flat side down.'),
+      S('sprout','Sprouting',6,12,'Keep the strongest seedling per spot.'),
+      S('seedling','Seedling',12,25,'Mulch around the plant to keep the soil cool and moist.'),
+      S('grow','Vining',25,45,'Vines spread fast. Give them space or train them along a fence.'),
+      S('flower','Flowering',45,55,'Hand-pollinate in the early morning: brush a male flower onto a female one.'),
+      S('fruit','Fruit growing',55,90,'Set each pumpkin on a tile or straw so it does not rot on wet soil.'),
+      S('harvest','Harvest',90,120,'Ready when the skin is hard and the stem turns dry and corky.')]},
+  carrot:{name:'Carrot',local:'',start:'seed',band:'Seeds',packet:'#d0773a',method:'ground',methods:['pot','ground'],
+    sun:'Full sun',water:'Every 1–2 days; keep evenly moist',pot:'Pot at least 30 cm deep',fertEvery:21,transplantDay:null,
+    potNote:'Use a pot at least 30 cm deep so the roots grow long and straight.',
+    visual:{form:'root',rootColor:'#e8822e',maxH:58,leafColor:'#4f8a3c',leafHi:'#7cb35a'},
+    stages:[
+      S('sow','Germination',0,14,'Sow shallow in loose, stone-free soil. Keep the surface damp; carrots are slow to sprout.'),
+      S('sprout','Sprouting',14,21,'Fine, grassy seed leaves appear. Water gently.'),
+      S('seedling','Seedling',21,35,'Thin to 5 cm apart so roots have room to grow.'),
+      S('grow','Root swelling',35,75,'Cover any orange shoulders with soil so they do not turn green.'),
+      S('harvest','Harvest',75,110,'Pull when the shoulders are about 2 cm wide. Water first to loosen the soil.')]},
+  potato:{name:'Potato',local:'',start:'tuber',band:'Seed potatoes',packet:'#9a7b55',method:'pot',methods:['pot','ground'],
+    sun:'Full sun; cooler spots do best',water:'Every 1–2 days; never soggy',pot:'Grow bag or 40 L pot',fertEvery:21,transplantDay:null,
+    visual:{leaf:'round',flower:'#efe6f4',fruit:'tuber',fruitColor:'#d9b77a',maxH:62,leafColor:'#4f7f3f',leafHi:'#78a85a'},
+    stages:[
+      S('sow','Planting',0,14,'Plant a sprouted seed potato 10 cm deep, sprouts facing up.'),
+      S('sprout','Shoots up',14,25,'Shoots break the surface. Keep the soil loose and damp.'),
+      S('seedling','Young plant',25,40,'Pile soil around the stems as they grow. Buried stem makes more potatoes.'),
+      S('grow','Growing',40,60,'Keep hilling up. Light must never reach the tubers or they turn green.'),
+      S('flower','Flowering',60,75,'Flowers mean tubers are forming underground.'),
+      S('fruit','Tubers bulking',75,95,'Water steadily; this is when the potatoes fill out.'),
+      S('harvest','Harvest',95,120,'Dig up when the leaves yellow and die back.')]},
+  sweetpotato:{name:'Sweet Potato',local:'',start:'cutting',band:'Slips',packet:'#a4505a',method:'ground',methods:['pot','ground'],
+    sun:'Full sun',water:'Every 2–3 days once settled',pot:'Ground or a 40 L grow bag',fertEvery:30,transplantDay:null,
+    visual:{leaf:'heart',fruit:'tuber',fruitColor:'#b4505e',maxH:46,leafColor:'#4f8a3c',leafHi:'#86b45a'},
+    stages:[
+      S('sow','Rooting',0,10,'Plant a 30 cm vine cutting with most of its stem buried.'),
+      S('sprout','New leaves',10,21,'New leaves mean roots have formed.'),
+      S('seedling','Spreading',21,40,'Vines start to run along the ground.'),
+      S('grow','Growing',40,90,'Lift the vines now and then so they do not root everywhere.'),
+      S('fruit','Tubers swelling',90,110,'Tubers fill out underground. Ease off watering a little.'),
+      S('harvest','Harvest',110,150,'Dig carefully; the skin bruises easily. The young leaves are good to eat too.')]},
+  cabbage:{name:'Cabbage',local:'',start:'seed',band:'Seeds',packet:'#6f8f7a',method:'tray',methods:['tray','pot','ground'],
+    sun:'Full sun; heat-tolerant types in the lowlands',water:'Daily; keep evenly moist',pot:'30 cm pot',fertEvery:14,transplantDay:28,
+    visual:{form:'head',headColor:'#c9dcb2',maxH:44,leafColor:'#6f9a7e',leafHi:'#9cbf9a'},
+    stages:[
+      S('sow','Germination',0,6,'Sow 1 cm deep. Choose a heat-tolerant variety for the lowlands.'),
+      S('sprout','Sprouting',6,14,'Give full light to keep seedlings sturdy.'),
+      S('seedling','Seedling',14,28,'Move to a pot when there are 4–6 true leaves.'),
+      S('grow','Leafy growth',28,60,'Big outer leaves feed the head. Check for caterpillars every few days.'),
+      S('fruit','Head forming',60,80,'A tight head forms in the centre. Keep watering even so it does not split.'),
+      S('harvest','Harvest',80,100,'Cut at the base when the head feels firm.')]},
+  lettuce:{name:'Lettuce',local:'',start:'seed',band:'Seeds',packet:'#8aa55a',method:'tray',methods:['tray','pot','ground'],
+    sun:'Morning sun, afternoon shade',water:'Daily, little and often',pot:'20 cm pot or trough',fertEvery:14,transplantDay:18,
+    visual:{form:'head',maxH:40,leafColor:'#86bb52',leafHi:'#b9dc7a'},
+    stages:[
+      S('sow','Germination',0,5,'Press seeds onto the surface; they need light to sprout.'),
+      S('sprout','Sprouting',5,10,'Keep cool and shaded from the midday sun.'),
+      S('seedling','Seedling',10,18,'Move to a pot when there are 4 true leaves.'),
+      S('grow','Leafy growth',18,35,'Water little and often. Heat makes leaves bitter.'),
+      S('harvest','Harvest',35,55,'Pick outer leaves as you need them, or cut the whole head.')]},
+  cilantro:{name:'Cilantro',local:'',start:'seed',band:'Seeds',packet:'#6f9a5a',method:'pot',methods:['pot','ground'],
+    sun:'Morning sun, afternoon shade',water:'Daily; keep just moist',pot:'15–20 cm pot',fertEvery:21,transplantDay:null,
+    visual:{form:'clump',maxH:40,leafColor:'#4f8f3f',leafHi:'#7cb35a'},
+    stages:[
+      S('sow','Germination',0,10,'Crack the seeds gently and soak them overnight before sowing.'),
+      S('sprout','Sprouting',10,16,'Long, thin seed leaves appear first.'),
+      S('seedling','Seedling',16,25,'Thin to 5 cm apart. Cilantro dislikes being moved.'),
+      S('grow','Leafy growth',25,35,'Keep it out of the hottest sun to delay flowering.'),
+      S('harvest','Harvest',35,55,'Cut outer stems often. Sow a new pot every 3 weeks for a steady supply.')]},
+  mint:{name:'Mint',local:'',start:'cutting',band:'Cuttings',packet:'#5a8f73',method:'pot',methods:['pot','ground'],
+    sun:'Sun to part shade',water:'Daily; likes moist soil',pot:'20 cm pot',fertEvery:30,transplantDay:null,
+    groundNote:'Mint spreads fast in open ground. Sink a pot into the bed to keep it in check.',
+    visual:{leaf:'small',maxH:50,leafScale:1.2,leafColor:'#3f8a4f',leafHi:'#6bb06a'},
+    stages:[
+      S('sow','Rooting',0,10,'Put a 10 cm stem in water or damp soil. Roots form in about a week.'),
+      S('sprout','New leaves',10,20,'New leaves at the tips mean it has rooted.'),
+      S('seedling','Spreading',20,35,'Runners spread under the soil and send up new stems.'),
+      S('grow','Bushing out',35,50,'Pinch the tips to keep it bushy.'),
+      S('harvest','Harvest',50,365,'Cut stems just above a leaf pair. It regrows quickly.')]},
+  onion:{name:'Shallot',local:'',start:'bulb',band:'Bulbs',packet:'#a85a4a',method:'pot',methods:['pot','ground'],
+    sun:'Full sun',water:'Every 1–2 days; less near harvest',pot:'Trough or pot, 10 cm apart',fertEvery:21,transplantDay:null,
+    visual:{form:'bulb',bulbColor:'#b8654f',maxH:62,leafColor:'#6f9f6a',leafHi:'#93bf84'},
+    stages:[
+      S('sow','Rooting',0,7,'Plant small bulbs with the tips just showing above the soil.'),
+      S('sprout','Shoots up',7,14,'Green shoots appear. These can be snipped as spring onions.'),
+      S('seedling','Young leaves',14,30,'Keep weeds away; onions do not like competition.'),
+      S('grow','Bulb forming',30,55,'Bulbs swell at the base. Ease off water as they ripen.'),
+      S('harvest','Harvest',55,75,'Lift when the leaves yellow and flop over. Dry in the shade.')]},
+  garlic:{name:'Garlic',local:'',start:'clove',band:'Cloves',packet:'#9a8a78',method:'pot',methods:['pot','ground'],
+    sun:'Full sun; does best in cooler spots',water:'Every 2 days; less near harvest',pot:'Pot or trough, 10 cm apart',fertEvery:21,transplantDay:null,
+    visual:{form:'bulb',bulbColor:'#efe8da',stripe:'#cdbfdc',maxH:66,leafColor:'#6f9f7a',leafHi:'#96bd94'},
+    stages:[
+      S('sow','Rooting',0,10,'Plant single cloves 3 cm deep, pointy end up.'),
+      S('sprout','Shoots up',10,21,'Flat green shoots appear.'),
+      S('seedling','Young leaves',21,45,'Keep the soil loose and weed-free.'),
+      S('grow','Bulb forming',45,100,'Each clove grows into a whole bulb. Water less as it matures.'),
+      S('harvest','Harvest',100,130,'Lift when half the leaves turn brown. Dry before storing.')]},
+  banana:{name:'Banana',local:'',start:'sucker',band:'Suckers',packet:'#b39a3e',method:'ground',methods:['pot','ground'],
+    sun:'Full sun',water:'Deep watering every 1–2 days',pot:'Ground, or a 60 cm tub for dwarf types',fertEvery:30,transplantDay:null,
+    potNote:'Choose a dwarf variety and a tub of at least 60 cm.',
+    visual:{form:'banana',maxH:104,fruitColor:'#f0cf45'},
+    stages:[
+      S('sow','Settling in',0,30,'Plant a sword sucker in rich soil with compost. Water well.'),
+      S('sprout','New leaves',30,60,'Fresh leaves unroll from the centre.'),
+      S('seedling','Young plant',60,120,'Remove extra suckers; keep one to follow on later.'),
+      S('grow','Growing',120,270,'Feed heavily with compost or manure. It is a hungry plant.'),
+      S('flower','Flowering',270,300,'A purple flower bud drops from the top. Hands of bananas form above it.'),
+      S('fruit','Bunch filling',300,360,'Cut off the purple bud once fruit stops forming to help the bunch fill.'),
+      S('harvest','Harvest',360,420,'Cut the bunch when the fingers are plump and rounded. Ripen in the shade.')]},
+  lime:{name:'Key Lime',local:'',start:'sapling',band:'Sapling',packet:'#8a9a3a',method:'pot',methods:['pot','ground'],
+    sun:'Full sun',water:'Every 1–2 days; let the top dry slightly',pot:'45 cm pot or ground',fertEvery:30,transplantDay:null,
+    potNote:'A 45 cm pot keeps it compact, and limes fruit well in pots.',
+    visual:{form:'tree',flower:'#ffffff',fruit:'lime',fruitColor:'#c5d84a',maxH:96},
+    stages:[
+      S('sow','Settling in',0,30,'Plant a grafted sapling at the same depth it was in its bag.'),
+      S('sprout','New flush',30,60,'Bright new leaves appear in flushes.'),
+      S('seedling','Young tree',60,180,'Watch new leaves for leaf miners and caterpillars.'),
+      S('grow','Growing',180,300,'Feed monthly with a citrus fertiliser.'),
+      S('flower','Flowering',300,330,'Small, fragrant white flowers. Steady water helps them set.'),
+      S('fruit','Fruit growing',330,420,'Small green limes swell over a few months.'),
+      S('harvest','Harvest',420,700,'Pick when firm, glossy and full size. It keeps fruiting year round.')]},
+  mushroom:{name:'Oyster Mushroom',local:'',start:'spawn',band:'Grow bag',packet:'#8f8473',method:'bag',methods:['bag'],
+    sun:'Shade only; no direct sun',water:'Mist 2–3 times a day',pot:'Grow bag in a cool, humid corner',fertEvery:null,transplantDay:null,
+    visual:{form:'mushroom'},
+    stages:[
+      S('sow','Colonising',0,25,'White threads spread through the bag. Keep it dark and undisturbed.'),
+      S('sprout','Pinning',25,30,'Tiny pins appear at the holes. Open the bag mouth and start misting.'),
+      S('grow','Caps growing',30,34,'Caps double in size each day. Mist often and keep them out of wind.'),
+      S('harvest','Harvest',34,100,'Twist off whole clusters before the edges curl up. A new flush follows in about 2 weeks.')]}
+};
+Object.entries(CROPS).forEach(([k,P]) => P.id = k);
+const CAT = {fruitveg:'Fruiting veg', leafy:'Leafy greens', root:'Roots & bulbs', herb:'Herbs', fruit:'Fruit trees', fungi:'Mushrooms'};
+const CAT_OF = {tomato:'fruitveg', chili:'fruitveg', eggplant:'fruitveg', capsicum:'fruitveg', cucumber:'fruitveg', pumpkin:'fruitveg', cabbage:'leafy', lettuce:'leafy', carrot:'root', potato:'root', sweetpotato:'root', onion:'root', garlic:'root', cilantro:'herb', mint:'herb', banana:'fruit', lime:'fruit', mushroom:'fungi'};
+const FROM = {seed:'Seeds', cutting:'Cuttings & runners', bulb:'Bulbs, cloves & tubers', sucker:'Suckers & saplings', spawn:'Spawn'};
+const CAT_COLOR = {fruitveg:'#c4683f', leafy:'#6f9a4a', root:'#b9822f', herb:'#3f8a6a', fruit:'#cf9f2a', fungi:'#9a8a72'};
+const CAT_SHORT = {fruitveg:'Fruiting veg', leafy:'Greens', root:'Roots', herb:'Herb', fruit:'Fruit', fungi:'Fungi'};
+const FROM_COLOR = {seed:'#4a4536', cutting:'#2f6f6a', bulb:'#7a4a5a', sucker:'#4f5f86', spawn:'#6f6458'};
+const FROM_SHORT = {seed:'Seeds', cutting:'Cuttings', bulb:'Bulbs', sucker:'Saplings', spawn:'Spawn'};
+const FROM_OF = {seed:'seed', cutting:'cutting', tuber:'bulb', bulb:'bulb', clove:'bulb', sucker:'sucker', sapling:'sucker', spawn:'spawn'};
+Object.entries(CROPS).forEach(([k,P]) => { P.cat = CAT_OF[k]; P.from = FROM_OF[P.start]; });
+const START = {seed:'Seed', tuber:'Seed potato', cutting:'Cutting', sucker:'Sucker', bulb:'Bulb', clove:'Clove', sapling:'Sapling', spawn:'Grow bag'};
+const METHOD = {tray:'Seed tray', pot:'Pot', ground:'Ground', bag:'Grow bag'};
+const ORD = {sow:0,sprout:1,seedling:2,grow:3,flower:4,fruit:5,harvest:6};
+
+
+/* ================= Replanting, grade and genetics ================= */
+const INFO = {
+  tomato:{replant:['easy','Save seeds from a fully ripe fruit. Scoop them out, let them sit in a little water for 2–3 days, rinse, then dry.'],grade:['beginner','Forgiving and fast in the lowlands. Main issues are staking and cracked fruit.'],gen:['Open-pollinated or F1','Many cherry tomatoes are open-pollinated and come true from saved seed. Seed from an F1 hybrid gives mixed plants. Flowers pollinate themselves, so varieties rarely cross.']},
+  chili:{replant:['easy','Dry the seeds from fully red chilies. They keep for a year in a dry jar.'],grade:['beginner','Thrives in the heat and fruits for months once it starts.'],gen:['Open-pollinated','Local bird\'s eye chili usually comes true from seed. Insects can cross it with other chilies nearby, so keep types apart if you save seed.']},
+  eggplant:{replant:['possible','Leave one fruit on until it turns dull yellow-brown, then scoop out and dry the seeds.'],grade:['intermediate','Easy to grow, but leaf pests like mites and beetles need regular checks.'],gen:['Often F1 hybrid','Many shop seeds are F1 hybrids, so saved seed can grow into different plants. Open-pollinated local types come true.']},
+  capsicum:{replant:['possible','Save seeds from a fully ripe red fruit and dry them in the shade.'],grade:['advanced','Lowland heat makes flowers drop. It does best with afternoon shade or in cooler areas.'],gen:['Often F1 hybrid','Most capsicum seed sold is F1 hybrid, so saved seed will not match the parent. It can also cross with chilies.']},
+  cucumber:{replant:['possible','Let one fruit stay on the vine until it turns yellow and soft, then rinse and dry the seeds.'],grade:['beginner','Grows fast with plenty of water and a trellis.'],gen:['Often F1 hybrid','Many cucumbers are F1 hybrids. Open-pollinated local cucumbers come true, but bees cross cucumbers easily, so grow one type if you save seed.']},
+  pumpkin:{replant:['easy','Scoop seeds from a fully mature pumpkin, rinse and dry them for a week.'],grade:['intermediate','Needs lots of room and often hand pollination to set fruit.'],gen:['Crosses easily','Bees cross pumpkins with other squash of the same family, so saved seed may grow something different unless you grow one type only.']},
+  carrot:{replant:['hard','Carrots only flower in their second year and rarely set seed in lowland heat. Buy fresh seed. A cut top regrows leaves but not a new carrot.'],grade:['intermediate','Needs deep, loose, stone-free soil. Short, round varieties suit pots and the lowlands best.'],gen:['Often F1 hybrid','Many carrot seeds are hybrids. Carrots also cross with wild relatives, so saved seed is unreliable.']},
+  potato:{replant:['easy','Keep a few small, healthy potatoes in a cool, dark place until they sprout, then plant them.'],grade:['advanced','Prefers cool weather. Lowland heat gives small harvests, so try it in a shaded spot or a highland garden.'],gen:['Clone','Each tuber is a copy of the parent plant. Diseases carry over too, so start again from clean seed potatoes every few seasons.']},
+  sweetpotato:{replant:['easy','Cut 30 cm vine tips (slips) and plant them, or let a tuber sprout in water.'],grade:['beginner','Tough, heat-loving and happy in poor soil.'],gen:['Clone','Grown from cuttings, so every plant is the same variety as its parent.']},
+  cabbage:{replant:['hard','Cabbage only flowers in its second year and rarely in lowland heat. Buy fresh seed each time.'],grade:['advanced','Heat and caterpillars make it tricky in the lowlands. Choose a heat-tolerant variety.'],gen:['Often F1 hybrid','Most cabbage seed is F1 hybrid, bred for heat tolerance and tight heads.']},
+  lettuce:{replant:['possible','Let one plant bolt and flower. Collect the fluffy seed heads once they dry.'],grade:['beginner','Quick and easy in light shade.'],gen:['Open-pollinated','Most lettuce is open-pollinated and pollinates itself, so it comes true from seed.']},
+  cilantro:{replant:['easy','Let a plant flower and dry out. The seeds are coriander seeds, and you can sow them again.'],grade:['beginner','Easy to sprout, but it flowers quickly in hot weather.'],gen:['Open-pollinated','Comes true from saved seed.']},
+  mint:{replant:['easy','Root any 10 cm stem in a glass of water, then pot it up.'],grade:['beginner','Almost impossible to kill. The bigger problem is stopping it spreading.'],gen:['Clone','Mint seed rarely comes true because mints cross freely. Cuttings give an exact copy.']},
+  onion:{replant:['easy','Keep a few healthy bulbs from your harvest to plant next time. A root end in water regrows green leaves.'],grade:['beginner','Grows easily from bulbs in full sun.'],gen:['Clone','Grown from bulbs, so each plant is a copy of the one it came from.']},
+  garlic:{replant:['possible','Replant the biggest cloves from your harvest. In the lowlands bulbs often stay small.'],grade:['advanced','Needs cooler weather to form good bulbs. It is a challenge in the lowlands.'],gen:['Clone','Grown from cloves, so each bulb is a copy. Garlic rarely makes real seed.']},
+  banana:{replant:['easy','New suckers grow from the base. Dig one out with some roots and plant it.'],grade:['beginner','Grows itself in the tropics. It just needs space, water and compost.'],gen:['Clone','Edible bananas are seedless, so every new plant is a sucker copy of its parent.']},
+  lime:{replant:['hard','Seed-grown trees take years to fruit and may differ from the parent. Marcotting (air-layering) a branch gives a fruiting copy faster.'],grade:['intermediate','Easy once settled. Needs feeding and watching for leaf miners.'],gen:['Grafted or marcotted','Nursery saplings are copies of a good tree. Seedlings can vary.']},
+  mushroom:{replant:['hard','Used bags do not restart. Buy a new grow bag; home spawn needs sterile lab conditions.'],grade:['beginner','A ready-made bag only needs shade and misting.'],gen:['Spawn strain','The strain comes from the spawn in the bag. Each bag gives the same kind of mushroom.']}
+};
+const ORIGIN = {
+  tomato:['Bred from wild','Wild tomatoes from the Andes have pea-sized fruit. Farmers in Mexico kept the biggest, sweetest plants year after year until tomatoes became the fruit we know. Cherry tomatoes are still close to that wild form.'],
+  chili:['Close to wild','Chilies were first farmed in Mexico thousands of years ago and reached Southeast Asia with Portuguese traders in the 1500s. Bird\'s eye chili stays close to wild chilies: small, upright and very hot. Birds do not feel the heat, so they eat the fruit and spread the seeds.'],
+  eggplant:['Bred from wild','Its wild ancestor in tropical Asia is small, spiny and bitter. Centuries of choosing the mildest, smoothest plants gave the large, tender eggplants we grow today.'],
+  capsicum:['Bred from wild','Capsicum is the same species as many chilies. A natural change switched off the heat, and growers kept choosing those mild plants until the fruit grew big and thick-walled.'],
+  cucumber:['Bred from wild','Wild cucumbers from the Himalayan foothills are small and bitter. Growers in India bred the bitterness out about 3,000 years ago; modern breeders added smooth, nearly seedless types.'],
+  pumpkin:['Bred from wild','Wild squash in the Americas are hard, bitter gourds. People there chose plants with soft, sweet flesh about 10,000 years ago, which makes squash one of the oldest crops.'],
+  carrot:['Bred from wild','Wild carrot has a thin, white, woody root. The first garden carrots in Central Asia were purple and yellow. Orange carrots were developed in Europe around the 1600s.'],
+  potato:['Bred from wild','Wild potatoes in the Andes have small, bitter tubers that can be toxic. Andean farmers spent thousands of years choosing safe, tasty ones and grew thousands of varieties.'],
+  sweetpotato:['Bred from wild','First farmed in Central and South America. Its genes hold a surprise: DNA from a soil bacterium that slipped in naturally long ago, so it is a kind of natural "GMO".'],
+  cabbage:['One wild plant, many crops','Cabbage, broccoli, cauliflower, kale and kailan are all one species, bred from wild cabbage on European sea cliffs. Growers enlarged a different part each time: leaves, flower buds or stems.'],
+  lettuce:['Bred from wild','It comes from wild prickly lettuce, a bitter weed with milky sap. Ancient Egyptians first grew it for oil from its seeds; later growers chose plants with soft, mild leaves.'],
+  cilantro:['Close to wild','Coriander has changed little from the wild plants of the Mediterranean. Growers mostly chose between leafy types and seed types.'],
+  mint:['Natural hybrid','Mints cross with each other easily. Peppermint is a cross of watermint and spearmint that sets almost no seed, so it spreads only by runners and cuttings.'],
+  onion:['Bred from wild','Onions and shallots were first farmed in Central Asia so long ago that no truly wild onion is known today.'],
+  garlic:['Ancient clone','Garlic was first farmed in Central Asia. Most garlic stopped making seed long ago, so it has been passed on as cloves, plant to plant, for thousands of years.'],
+  banana:['Hybrid','Wild bananas from this region, Malaysia included, are packed with hard seeds. Most edible bananas are seedless hybrids that farmers found long ago and have spread by suckers ever since.'],
+  lime:['Hybrid','Life does not give us limes or lemons: both are crosses. Key lime comes from citron and a wild papeda, and lemon from citron and bitter orange. Nearly all citrus trace back to a few wild ancestors (citron, pomelo, mandarin and papeda). People kept the best chance crosses going by grafting.'],
+  mushroom:['Close to wild','Oyster mushrooms grow wild on dead trees around the world. Farm strains are wild ones chosen for big, fast flushes. They were first farmed in Germany during the First World War.']
+};
+Object.entries(INFO).forEach(([k,v]) => { if(CROPS[k]) CROPS[k].info = {...v, origin: ORIGIN[k]}; });
+const LEVEL = {easy:['Easy','lv-good'], possible:['Possible','lv-mid'], hard:['Hard','lv-hard'], beginner:['Beginner','lv-good'], intermediate:['Intermediate','lv-mid'], advanced:['Advanced','lv-hard']};
+
+/* ================= Varieties: wild ancestor to what you buy ================= */
+// Small flat drawings on a 60x60 canvas, same style as the harvest pictures.
+const VD = (() => {
+  const G = '#4f7d34', hl = (x,y,r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity=".35"/>`;
+  const sh = (rx=20) => `<ellipse cx="30" cy="55" rx="${rx}" ry="2.6" fill="#3d3929" opacity=".08"/>`;
+  const calyx = (x,y,s=1) => `<path d="M${x-5*s} ${y+1}L${x} ${y-3*s}L${x+5*s} ${y+1}L${x} ${y+2.5*s}Z" fill="#4f8a3a"/>`;
+  const cluster = (c, r, pts) => sh(18) + `<path d="M8 12Q30 4 52 12" stroke="${G}" stroke-width="1.6" fill="none" stroke-linecap="round"/>` +
+    pts.map(([x,y]) => `<path d="M${x} 9V${y-r}" stroke="${G}" stroke-width="1"/><circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>${hl(x-r*.35,y-r*.35,Math.max(.8,r*.25))}`).join('');
+  const tomato = (c, rx, ry, ribs) => sh(rx) + `<ellipse cx="30" cy="${54-ry}" rx="${rx}" ry="${ry}" fill="${c}"/>` +
+    (ribs ? `<path d="M${30-rx*.5} ${56-ry*2+3}Q${30-rx*.7} ${54-ry} ${30-rx*.5} ${52}M30 ${56-ry*2+2}V52M${30+rx*.5} ${56-ry*2+3}Q${30+rx*.7} ${54-ry} ${30+rx*.5} 52" stroke="#000" stroke-opacity=".12" stroke-width="1.4" fill="none"/>` : '') +
+    hl(30-rx*.45, 54-ry*1.4, Math.max(1.4, rx*.18)) + calyx(30, 56-ry*2+1);
+  const pear = c => sh(10) + `<path d="M30 14C35 14 35 22 34 26C42 32 42 52 30 53C18 52 18 32 26 26C25 22 25 14 30 14Z" fill="${c}"/>${hl(25,36,2.4)}` + calyx(30,15,.8);
+  const pod = (c, len, w, a=0, x=30, y=8) => `<g transform="translate(${x} ${y}) rotate(${a})"><path d="M0 1C${w} ${len*.15} ${w*.8} ${len*.7} 0 ${len}C${-w*.8} ${len*.7} ${-w} ${len*.15} 0 1Z" fill="${c}"/><path d="M${-w*.6} 0h${w*1.2}l-1 3h${-w*1.2+2}z" fill="${G}"/><path d="M0 0q1.5-4 5-5" stroke="${G}" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>`;
+  const bell = (c, s=1) => sh(16*s) + `<g transform="translate(30 ${54-26*s}) scale(${s})"><path d="M-13 2C-18 10-16 24-7 26C-2 27.5 0 24 0 24C0 24 2 27.5 7 26C16 24 18 10 13 2C7-3-7-3-13 2Z" fill="${c}"/><path d="M0 2V24M-7 3C-10 10-9 18-6 24M7 3C10 10 9 18 6 24" stroke="#000" stroke-opacity=".12" stroke-width="1" fill="none"/><path d="M-6 1Q0-3 6 1Q0 4-6 1Z" fill="${G}"/><path d="M0 0V-5" stroke="${G}" stroke-width="2.4" stroke-linecap="round"/></g>`;
+  const egg = (c, len, w, a=0, x=30, y=8) => `<g transform="translate(${x} ${y}) rotate(${a})"><path d="M0 0C${w*.7} ${len*.2} ${w} ${len*.6} ${w*.6} ${len*.9}C${w*.3} ${len*1.03} ${-w*.3} ${len*1.03} ${-w*.6} ${len*.9}C${-w} ${len*.6} ${-w*.7} ${len*.2} 0 0Z" fill="${c}"/>${hl(-w*.35, len*.45, Math.max(1,w*.18))}<path d="M-4 2L0-1L4 2L2.5 5H-2.5Z" fill="#5f8f3b"/><path d="M0-1V-5" stroke="#5f8f3b" stroke-width="2" stroke-linecap="round"/></g>`;
+  const cuke = (c, len, w, a=0, bumps, stripe) => `${sh(Math.max(10, len*.4))}<g transform="rotate(${a} 30 32)"><rect x="${30-w}" y="${32-len/2}" width="${w*2}" height="${len}" rx="${w}" fill="${c}"/>` +
+    (stripe ? `<path d="M${30-w*.4} ${34-len/2}V${30+len/2}M${30+w*.4} ${34-len/2}V${30+len/2}" stroke="#fff" stroke-opacity=".3" stroke-width="1.6" stroke-linecap="round"/>` : `<path d="M${30-w*.45} ${35-len/2}V${29+len/2}" stroke="#fff" stroke-opacity=".2" stroke-width="1.6" stroke-linecap="round"/>`) +
+    (bumps ? Array.from({length: Math.round(len/6)}, (_, i) => `<circle cx="${30 + (i%2 ? w*.45 : -w*.3)}" cy="${34 - len/2 + i*6 + 2}" r=".9" fill="${bumps}"/>`).join('') : '') +
+    `<rect x="${28.5}" y="${30-len/2-1}" width="3" height="4" rx="1" fill="#6b7f3f"/></g>`;
+  const pumpkin = (c, rx, ry, rib, stem='#6b7f3f') => sh(rx) + `<ellipse cx="30" cy="${54-ry}" rx="${rx}" ry="${ry}" fill="${c}"/><ellipse cx="30" cy="${54-ry}" rx="${rx*.55}" ry="${ry}" fill="none" stroke="${rib}" stroke-width="1.1"/><ellipse cx="30" cy="${54-ry}" rx="${rx*.2}" ry="${ry}" fill="none" stroke="${rib}" stroke-width="1.1"/><path d="M30 ${55-ry*2}q-1-4 3-6" stroke="${stem}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  const gourd = (c, stripe) => sh(11) + `<circle cx="30" cy="42" r="11" fill="${c}"/><path d="M30 31Q24 42 30 53M30 31Q36 42 30 53M30 31Q19 42 22 50M30 31Q41 42 38 50" stroke="${stripe}" stroke-width="1.6" fill="none"/><path d="M30 31v-4" stroke="#6b7f3f" stroke-width="2" stroke-linecap="round"/>`;
+  const butternut = c => sh(10) + `<path d="M26 10C34 10 34 16 34 26C42 32 42 52 30 53C18 52 18 32 26 26C26 16 23 10 26 10Z" fill="${c}"/><ellipse cx="30" cy="44" rx="6" ry="5" fill="#000" opacity=".06"/><path d="M28 10v-4" stroke="#6b7f3f" stroke-width="2.4" stroke-linecap="round"/>`;
+  const fronds = (x, y) => `<path d="M${x} ${y}L${x-7} ${y-12}M${x} ${y}L${x} ${y-14}M${x} ${y}L${x+7} ${y-12}" stroke="#5f9a45" stroke-width="2.4" stroke-linecap="round"/><path d="M${x-9} ${y-14}l3 2M${x+9} ${y-14}l-3 2M${x-2} ${y-16}h4" stroke="#5f9a45" stroke-width="2" stroke-linecap="round"/>`;
+  const root = (c, len, w, ring='#000') => fronds(30, 20) + `<path d="M${30-w} 20Q30 17 ${30+w} 20L${30+1} ${20+len}Q30 ${21+len} ${30-1} ${20+len}Z" fill="${c}"/>` +
+    [.25,.45,.65].map((k,i) => `<path d="M${30-w*(1-k)*.7 + (i%2?1:0)} ${20+len*k}h${w*.7}" stroke="${ring}" stroke-opacity=".2" stroke-width="1.1" stroke-linecap="round"/>`).join('');
+  const roundRoot = c => fronds(30, 24) + `<circle cx="30" cy="36" r="12" fill="${c}"/><path d="M30 48v5" stroke="${c}" stroke-width="1.4"/>${hl(25,32,2.6)}`;
+  const tubers = (c, list, eye='#000') => sh(20) + list.map(([x,y,rx,ry,a]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" transform="rotate(${a} ${x} ${y})" fill="${c}"/><circle cx="${x-rx*.35}" cy="${y-ry*.2}" r=".9" fill="${eye}" opacity=".35"/><circle cx="${x+rx*.3}" cy="${y+ry*.25}" r=".9" fill="${eye}" opacity=".35"/>`).join('');
+  const spindle = (skin, flesh) => sh(18) + `<g transform="rotate(-25 24 34)"><path d="M24 10C33 18 33 46 24 56C15 46 15 18 24 10Z" fill="${skin}"/><path d="M24 10l1-5M24 56l-1 3" stroke="${skin}" stroke-width="1.4" stroke-linecap="round"/></g><ellipse cx="42" cy="44" rx="9" ry="9" fill="${skin}"/><ellipse cx="42" cy="44" rx="7.6" ry="7.6" fill="${flesh}"/>`;
+  const leaf = (x, y, L, a, c, w=.5) => { const r = a*Math.PI/180, ex = x + Math.cos(r)*L, ey = y + Math.sin(r)*L, nx = -Math.sin(r)*L*w*.5, ny = Math.cos(r)*L*w*.5, mx = (x+ex)/2, my = (y+ey)/2;
+    return `<path d="M${x} ${y}Q${(mx+nx).toFixed(1)} ${(my+ny).toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}Q${(mx-nx).toFixed(1)} ${(my-ny).toFixed(1)} ${x} ${y}Z" fill="${c}"/>`; };
+  const wildCab = () => sh(14) + `<path d="M30 54V18" stroke="#6f8f7a" stroke-width="3" stroke-linecap="round"/>` + [[46,-150,16],[46,-30,16],[34,-140,14],[34,-40,14],[24,-120,11],[24,-60,11]].map(([y,a,L]) => leaf(30, y, L, a, '#8aa79a', .7)).join('') + `<circle cx="30" cy="15" r="2.5" fill="#f2d55a"/><circle cx="26" cy="18" r="2" fill="#f2d55a"/><circle cx="34" cy="18" r="2" fill="#f2d55a"/>`;
+  const cabbage = c => sh(18) + [-160,-20,-130,-50].map(a => leaf(30, 50, 20, a, '#6f9a7e', .8)).join('') + `<circle cx="30" cy="36" r="15" fill="${c}"/><path d="M20 40Q28 20 42 32M24 48Q30 30 44 42" stroke="#000" stroke-opacity=".1" stroke-width="1.2" fill="none"/>`;
+  const broccoli = () => sh(14) + `<path d="M27 54L28 36M33 54L32 36" stroke="#8fb06a" stroke-width="5" stroke-linecap="round"/>` + [[20,30,9],[40,30,9],[30,22,10],[24,20,7],[37,19,7]].map(([x,y,r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#3f7a3a"/>`).join('') + [[22,26],[34,18],[40,28],[28,28]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="#2f5f2c"/>`).join('');
+  const cauli = () => sh(18) + [-160,-20,-125,-55].map(a => leaf(30, 48, 21, a, '#5f8f5a', .7)).join('') + [[22,34,8],[38,34,8],[30,28,9],[30,40,8]].map(([x,y,r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#f4eedc"/>`).join('') + `<path d="M24 32a3 3 0 0 1 5 0M32 28a3 3 0 0 1 5 0M28 39a3 3 0 0 1 5 0" stroke="#d8ceb0" stroke-width="1" fill="none"/>`;
+  const kale = () => sh(12) + [[-105,30,'#2f5a3a'],[-75,30,'#3f6f45'],[-90,34,'#2a5235']].map(([a,L,c]) => `<g>${leaf(30, 54, L, a, c, .55)}</g>`).join('') + `<path d="M30 54L23 26M30 54L37 26M30 54V20" stroke="#8fb06a" stroke-width="1.2" fill="none"/><path d="M18 28q2-3 4 0q2-3 4 0M34 28q2-3 4 0q2-3 4 0M24 20q2-3 4 0q2-3 4 0" stroke="#2a5235" stroke-width="1.4" fill="none"/>`;
+  const kailan = () => sh(14) + [[24,-100],[30,-90],[36,-80]].map(([x,a]) => `<path d="M${x} 54V24" stroke="#9cc07a" stroke-width="3.4" stroke-linecap="round"/>${leaf(x, 30, 16, a-30, '#3f6f45', .9)}${leaf(x, 38, 12, a+40, '#4f7f50', .9)}`).join('') + `<circle cx="30" cy="16" r="2" fill="#f4f1e6"/><circle cx="25" cy="18" r="1.6" fill="#f4f1e6"/>`;
+  const lettuce = (cs, n, L, w=.8, frill) => sh(18) + Array.from({length:n}, (_, i) => leaf(30, 52, L - Math.abs(i - (n-1)/2)*2, -165 + i*(150/(n-1)), cs[i%cs.length], w)).join('') + (frill ? `<path d="M10 34q3-3 6 0q3-3 6 0M38 34q3-3 6 0q3-3 6 0M22 22q3-3 6 0q3-3 6 0" stroke="${frill}" stroke-width="2" fill="none" stroke-linecap="round"/>` : '');
+  const wildLettuce = () => sh(8) + `<path d="M30 54V12" stroke="#9aa86a" stroke-width="2.4" stroke-linecap="round"/>` + [[48,-160],[48,-20],[38,-150],[38,-30],[28,-140],[28,-40]].map(([y,a]) => leaf(30, y, 13, a, '#6f8f4a', .4)).join('') + `<circle cx="30" cy="11" r="2.4" fill="#f2d55a"/><circle cx="25" cy="15" r="1.8" fill="#f2d55a"/>`;
+  const herb = (c, n=7, top) => sh(14) + Array.from({length:n}, (_, i) => { const x = 14 + i*(32/(n-1)), y = 20 + Math.abs(i-(n-1)/2)*3; return `<path d="M30 54Q30 40 ${x} ${y}" stroke="#6a9a45" stroke-width="1.2" fill="none"/>${leaf(x, y, 6, -130, c, .9)}${leaf(x, y, 6, -50, c, .9)}${leaf(x, y, 7, -90, c, .9)}`; }).join('') + (top || '');
+  const seeds = c => sh(18) + [[18,48],[25,50],[32,49],[39,50],[46,48],[22,43],[29,44],[36,43],[43,44],[26,38],[33,38],[40,39],[30,33]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="3.4" fill="${c}"/><path d="M${x-2} ${y}h4" stroke="#000" stroke-opacity=".15" stroke-width=".8"/>`).join('');
+  const sprig = (c, stem, L) => sh(8) + `<path d="M30 54V12" stroke="${stem}" stroke-width="2.4" stroke-linecap="round"/>` + [[48,L],[38,L-1],[28,L-3],[19,L-5]].map(([y,l]) => leaf(30, y, l, -20, c, .7) + leaf(30, y, l, -160, c, .7)).join('') + leaf(30, 13, 6, -70, c, .7) + leaf(30, 13, 6, -110, c, .7);
+  const bulb = (c, line, rx=15, ry=14, neck='#c9a07a') => sh(rx) + `<path d="M28 ${54-ry*2-2}Q30 ${54-ry*2-14} 32 ${54-ry*2-2}Z" fill="${neck}"/><ellipse cx="30" cy="${53-ry}" rx="${rx}" ry="${ry}" fill="${c}"/><path d="M30 ${53-ry*2}C24 ${53-ry*1.4} 24 ${53-ry*.4} 28 53M30 ${53-ry*2}C36 ${53-ry*1.4} 36 ${53-ry*.4} 32 53" stroke="${line}" stroke-width="1" fill="none" opacity=".6"/>${hl(30-rx*.5, 53-ry*1.2, 2.2)}`;
+  const shallots = () => sh(18) + [[20,40,-12],[40,40,12],[30,38,0]].map(([x,y,a]) => `<g transform="rotate(${a} ${x} ${y})"><path d="M${x} ${y-16}Q${x+2} ${y-8} ${x+8} ${y+4}Q${x+6} ${y+14} ${x} ${y+14}Q${x-6} ${y+14} ${x-8} ${y+4}Q${x-2} ${y-8} ${x} ${y-16}Z" fill="#a85a4a"/><path d="M${x} ${y-14}V${y+12}" stroke="#7a3a30" stroke-width=".8" opacity=".5"/></g>`).join('');
+  const springOnion = () => sh(12) + [22,27,32,37].map((x,i) => `<path d="M${x} 52V${10+i*2}" stroke="${i%2 ? '#5f9a45' : '#6faa52'}" stroke-width="3.4" stroke-linecap="round"/><path d="M${x} 52V42" stroke="#f1ede0" stroke-width="3.6" stroke-linecap="round"/>`).join('') + `<path d="M18 54h24" stroke="#d9c7a0" stroke-width="1" stroke-dasharray="1 2"/>`;
+  const garlic = (c, line, solo, s=1) => sh(14*s) + `<g transform="translate(30 36) scale(${s}) translate(-30 -36)"><path d="M28 20Q30 6 32 20Z" fill="#e4dccb"/><path d="M30 18C16 24 12 40 16 48C20 56 40 56 44 48C48 40 44 24 30 18Z" fill="${c}" stroke="#cbbf9f" stroke-width="1"/>` +
+    (solo ? '' : `<path d="M30 20C24 30 23 44 27 54M30 20C36 30 37 44 33 54M30 20C20 28 18 40 21 50M30 20C40 28 42 40 39 50" stroke="${line}" stroke-width="1.1" fill="none" opacity=".7"/>`) + `${hl(22,34,2.4)}</g>`;
+  const bananas = (c, n, len, curve, thick=6) => sh(18) + `<path d="M10 12L16 19" stroke="#6b7f3f" stroke-width="4" stroke-linecap="round"/>` + Array.from({length:n}, (_, i) => {
+    const a = (n === 1 ? 35 : 12 + i*(50/(n-1))) * Math.PI/180, x0 = 16, y0 = 19, ex = x0 + Math.cos(a)*len, ey = y0 + Math.sin(a)*len;
+    const mx = (x0+ex)/2 - Math.sin(a)*curve*.6, my = (y0+ey)/2 + Math.cos(a)*curve*.6;
+    return `<path d="M${x0} ${y0}Q${mx.toFixed(1)} ${my.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" stroke="${c}" stroke-width="${thick}" fill="none" stroke-linecap="round"/><path d="M${x0} ${y0}Q${mx.toFixed(1)} ${my.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" stroke="#000" stroke-opacity=".08" stroke-width="1" fill="none" transform="translate(0 ${thick*.3})"/><circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="1.6" fill="#6b5a3a"/>`; }).reverse().join('');
+  const seededBanana = () => `<path d="M10 30Q30 52 50 26" stroke="#9fb05a" stroke-width="12" fill="none" stroke-linecap="round"/><ellipse cx="30" cy="43" rx="11" ry="6" fill="#f3ecc8"/>` + [[24,42],[28,45],[32,41],[36,44],[27,40],[33,46]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="1.5" fill="#2f2a25"/>`).join('');
+  const citrus = (c, r, o = {}) => sh(r) + `<g transform="translate(30 ${54-r*(o.flat ? .8 : 1)})">` +
+    (o.oblong ? `<path d="M0 ${-r*1.25}C${r} ${-r*1.2} ${r*1.05} ${r*.8} 0 ${r}C${-r*1.05} ${r*.8} ${-r} ${-r*1.2} 0 ${-r*1.25}Z" fill="${c}"/>`
+      : `<ellipse rx="${r}" ry="${r*(o.flat ? .8 : 1)}" fill="${c}"/>`) +
+    (o.nipple ? `<ellipse cx="0" cy="${r*(o.flat ? .8 : 1) - .5}" rx="2.2" ry="2.6" fill="${c}"/>` : '') +
+    (o.rough ? [[-.4,-.3],[.3,-.5],[.5,.2],[-.2,.4],[0,0],[-.6,.1]].map(([x,y]) => `<circle cx="${x*r}" cy="${y*r}" r="${r*.1}" fill="#000" opacity=".08"/>`).join('') : '') +
+    `<circle cx="${-r*.4}" cy="${-r*.4}" r="${r*.18}" fill="#fff" opacity=".35"/><circle cx="0" cy="${-r*(o.oblong ? 1.25 : o.flat ? .8 : 1) + 1}" r="1.4" fill="#6b8f2a"/>` +
+    (o.leaf ? leaf(0, -r*(o.flat ? .8 : 1), 9, -40, '#4f7d34', .6) : '') + `</g>`;
+  const oyster = (c, gill, n=3, stem='#e6dbc6') => sh(18) + [[18,44,.7,-28],[42,42,.75,26],[30,50,1,0]].slice(0, n).map(([x,y,s,a]) => `<g transform="translate(${x} ${y}) rotate(${a}) scale(${s})"><path d="M0 0V8" stroke="${stem}" stroke-width="4" stroke-linecap="round"/><path d="M0 1C-13 0-19-10-15-17C-9-22 9-22 15-17C19-10 13 0 0 1Z" fill="${c}"/><path d="M0 0L-10-13M0 0L-3-17M0 0L4-17M0 0L10-13" stroke="${gill}" stroke-width=".9"/></g>`).join('');
+  const kingOyster = () => sh(14) + [[24,-6],[36,6]].map(([x,a]) => `<g transform="rotate(${a} ${x} 54)"><rect x="${x-5}" y="22" width="10" height="32" rx="5" fill="#f1e9d8"/><path d="M${x-9} 24C${x-9} 16 ${x+9} 16 ${x+9} 24C${x+5} 26 ${x-5} 26 ${x-9} 24Z" fill="#9a7b55"/></g>`).join('');
+  const onLog = () => `<rect x="6" y="40" width="48" height="14" rx="7" fill="#7a5a3e"/><ellipse cx="50" cy="47" rx="4" ry="7" fill="#a07b55"/><path d="M12 46h18M20 51h20" stroke="#5f4430" stroke-width="1" stroke-linecap="round"/>` + [[18,38,.55,-20],[30,36,.65,0],[42,38,.5,20]].map(([x,y,s,a]) => `<g transform="translate(${x} ${y}) rotate(${a}) scale(${s})"><path d="M0 1C-13 0-19-10-15-17C-9-22 9-22 15-17C19-10 13 0 0 1Z" fill="#bfb3a0"/></g>`).join('');
+  return {cluster, tomato, pear, pod, bell, egg, cuke, pumpkin, gourd, butternut, root, roundRoot, tubers, spindle, wildCab, cabbage, broccoli, cauli, kale, kailan, lettuce, wildLettuce, herb, seeds, sprig, bulb, shallots, springOnion, garlic, bananas, seededBanana, citrus, oyster, kingOyster, onLog, sh};
+})();
+// tag: 'wild' | 'parent' | 'this' | 'common' | ''
+const VARIETIES = (() => { const d = VD, v = (n, note, tag, svg) => ({n, note, tag, svg});
+return {
+  tomato:[
+    v('Wild currant tomato','Pea-sized, from the Andes','wild', d.cluster('#d8402c', 3, [[14,20],[22,26],[30,19],[38,25],[46,20],[18,32],[34,33],[42,31]])),
+    v('Cherry tomato','Sweet, in bunches','this', d.cluster('#d8402c', 6.5, [[16,24],[30,22],[44,25],[22,40],[38,40]])),
+    v('Roma','Bred for firm flesh','', d.tomato('#d23a2a', 11, 17)),
+    v('Beefsteak','Bred for huge fruit','', d.tomato('#c9332a', 21, 15, true)),
+    v('Yellow pear','Small, mild and sweet','', d.pear('#f2c335'))],
+  chili:[
+    v('Wild chiltepin','Tiny round berries','wild', d.cluster('#c9241b', 3.2, [[14,20],[24,26],[34,19],[44,24],[20,34],[38,33]])),
+    v('Bird\'s eye','Small, upright, very hot','this', d.sh(14) + d.pod('#c9241b',20,3.4,180,20,52) + d.pod('#c9241b',22,3.6,175,30,54) + d.pod('#7ba43a',18,3.2,185,40,50)),
+    v('Long red chili','Long and milder','', d.sh(14) + d.pod('#c22a1f',40,5,-14,24,8) + d.pod('#a81d16',38,5,10,36,8)),
+    v('Green chili','The same chili, picked green','', d.sh(14) + d.pod('#5f8f3b',40,5,-14,24,8) + d.pod('#4f7d34',38,5,10,36,8)),
+    v('Bell pepper','Same species, no heat','', d.bell('#d23a2a', .9))],
+  eggplant:[
+    v('Wild eggplant','Small, spiny and bitter','wild', d.sh(14) + d.cluster('#d9d78a', 5.5, [[18,30],[32,26],[44,32],[26,42]]) + '<path d="M15 23l-2-3M33 19l1-3M45 25l2-3" stroke="#6b7f3f" stroke-width="1.2"/>'),
+    v('Long eggplant','Long, slim and tender','this', d.sh(10) + d.egg('#4a1f5a', 44, 7, -10, 28, 8)),
+    v('Globe','Bred for big, round fruit','', d.sh(14) + d.egg('#3a1648', 36, 15, 0, 30, 14)),
+    v('Pea eggplant','Pea eggplant, for curries','', d.cluster('#5f8f3b', 3.6, [[14,22],[21,28],[28,21],[35,27],[42,22],[48,28],[25,34],[39,34]])),
+    v('White eggplant','Why it is called an egg plant','', d.sh(12) + d.egg('#f7f4ea', 30, 11, 15, 28, 18).replace('fill="#f7f4ea"','fill="#f7f4ea" stroke="#cfc6b0" stroke-width="1"'))],
+  capsicum:[
+    v('Wild chili','Tiny, hot, spread by birds','wild', d.cluster('#c9241b', 3.2, [[14,20],[24,26],[34,19],[44,24],[20,34],[38,33]])),
+    v('Red capsicum','Fully ripe, sweetest','this', d.bell('#d23a2a')),
+    v('Green capsicum','The same fruit, picked early','', d.bell('#4f8a3a')),
+    v('Yellow capsicum','A yellow-ripening type','', d.bell('#f2c335')),
+    v('Sweet pointed','Long, thin-walled, no heat','', d.sh(14) + d.pod('#d23a2a', 42, 9, -8, 30, 8))],
+  cucumber:[
+    v('Wild cucumber','Small, spiny and bitter','wild', d.cuke('#a9b86a', 26, 7.5, 20, '#5f6f3a')),
+    v('Local cucumber','Bitterness bred out','this', d.cuke('#8fb560', 34, 9, 20, '', true)),
+    v('Japanese cucumber','Bred long, few seeds','', d.cuke('#3f6f30', 46, 5.5, 30)),
+    v('Gherkin','Bred small, for pickles','', d.cuke('#4f7d34', 28, 8.5, 15, '#c7d99a')),
+    v('Lemon cucumber','Round and yellow','', d.sh(12) + '<circle cx="30" cy="40" r="12" fill="#f0d76a"/><circle cx="25" cy="35" r="2.4" fill="#fff" opacity=".4"/><path d="M30 28v-3" stroke="#6b7f3f" stroke-width="2" stroke-linecap="round"/>')],
+  pumpkin:[
+    v('Wild gourd','Hard shell, bitter flesh','wild', d.gourd('#a8b46a', '#e8e4c4')),
+    v('Pumpkin','Bred for sweet flesh','this', d.pumpkin('#e08a2e', 22, 15, '#c46f1c')),
+    v('Butternut','Smooth, few seeds','', d.butternut('#e2b77a')),
+    v('Kabocha','Japanese, dense and sweet','', d.pumpkin('#3f5a3a', 19, 13, '#2f4a2a')),
+    v('Zucchini','A squash eaten young','', d.cuke('#3f6f30', 40, 6.5, 35, '', true))],
+  carrot:[
+    v('Wild carrot','Thin, white and woody','wild', d.root('#efe8d6', 32, 3)),
+    v('Purple carrot','The first garden carrots','', d.root('#6a2f5a', 30, 6.5)),
+    v('Yellow carrot','Also from Central Asia','', d.root('#f0c63a', 30, 6.5)),
+    v('Orange carrot','Bred in Europe, 1600s','this', d.root('#e8822e', 32, 7)),
+    v('Round carrot','Short, good for pots','', d.roundRoot('#e8822e'))],
+  potato:[
+    v('Wild potato','Tiny and bitter','wild', d.sh(18) + '<path d="M10 20Q30 10 50 20M18 18L16 40M30 14V36M42 17L44 44" stroke="#c9b48a" stroke-width="1" fill="none"/>' + d.tubers('#c9a86a', [[16,42,4,3,0],[30,38,3.5,3,0],[44,46,4.5,3.5,0]]).replace(d.sh(20), '')),
+    v('White potato','All-round, in every shop','this', d.tubers('#d9b77a', [[24,42,14,10,-15],[42,46,10,7,20]], '#7a5a30')),
+    v('Red potato','Red skin, waxy flesh','', d.tubers('#b5534a', [[24,42,13,10,-10],[42,46,10,8,15]])),
+    v('Purple potato','Purple right through, Andean','', d.tubers('#5a2f5a', [[26,42,14,9,-20],[44,46,8,6,10]])),
+    v('Fingerling','Small and finger-shaped','', d.tubers('#e0bf86', [[22,40,12,4.5,-30],[34,46,13,4.5,-10],[44,36,10,4,-45]], '#7a5a30'))],
+  sweetpotato:[
+    v('Wild morning glory','Thin, stringy roots','wild', d.sh(16) + '<path d="M30 12V26M30 26Q18 34 14 50M30 26Q30 40 28 52M30 26Q42 36 46 50" stroke="#c9a08a" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="30" cy="11" r="5" fill="#c58bd0"/><circle cx="30" cy="11" r="2" fill="#f7eefa"/>'),
+    v('Orange sweet potato','Red skin, orange flesh','this', d.spindle('#a4505a', '#f0943a')),
+    v('Purple sweet potato','Purple skin and flesh','', d.spindle('#5a2f5a', '#7a3f8a')),
+    v('Japanese sweet potato','Red skin, pale gold flesh','', d.spindle('#9a3f5a', '#f3dc9a')),
+    v('White sweet potato','Pale skin, dry and starchy','', d.spindle('#e6d2b0', '#fbf3df'))],
+  cabbage:[
+    v('Wild cabbage','Loose leaves on sea cliffs','wild', d.wildCab()),
+    v('Cabbage','Bred for a tight head','this', d.cabbage('#c9dcb2')),
+    v('Broccoli','Bred for flower buds','', d.broccoli()),
+    v('Cauliflower','Bred for a white flower head','', d.cauli()),
+    v('Kale','Bred for big curly leaves','', d.kale()),
+    v('Kailan','Bred for tender stems','', d.kailan())],
+  lettuce:[
+    v('Prickly lettuce','Bitter weed with milky sap','wild', d.wildLettuce()),
+    v('Leaf lettuce','Loose, frilly green leaves','this', d.lettuce(['#86bb52','#9ccc62'], 7, 22, .8, '#b9dc7a')),
+    v('Romaine','Tall, crisp leaves','', d.lettuce(['#4f8a3c','#5f9a45'], 5, 32, .45)),
+    v('Butterhead','Soft, round head','', d.lettuce(['#9ccc62','#b9dc7a'], 7, 18, 1)),
+    v('Red leaf','Frilly, red-tipped','', d.lettuce(['#8a3f45','#86bb52'], 7, 22, .8, '#a2454c'))],
+  cilantro:[
+    v('Wild coriander','Small Mediterranean herb','wild', d.herb('#7f9a5a', 5)),
+    v('Leafy coriander','Bred for lots of leaves','this', d.herb('#4f8f3f', 8)),
+    v('Seed coriander','Bred for big seed heads','', d.herb('#6f9a5a', 5, [16,30,44].map(x => `<circle cx="${x}" cy="12" r="3" fill="#cdb98a"/>`).join(''))),
+    v('Coriander seed','The dried seeds, a spice','', d.seeds('#c9a86a'))],
+  mint:[
+    v('Water mint','Parent, grows by streams','parent', d.sprig('#3f7a4a', '#7a4a5a', 9)),
+    v('Spearmint','Parent, sweet and mild','parent', d.sprig('#5aa05a', '#5f8f45', 11)),
+    v('Peppermint','Strong and cool','', d.sprig('#2f6a3f', '#6a3a4a', 11)),
+    v('Kitchen mint','The kitchen mint sold here','this', d.sprig('#4f9a5a', '#4f7f3f', 12))],
+  onion:[
+    v('Wild relative','Small bulb, Central Asia','wild', d.bulb('#c9a080', '#8f6a4a', 9, 9, '#b8a080')),
+    v('Shallot','Shallots, in small clusters','this', d.shallots()),
+    v('Red onion','One big red bulb','', d.bulb('#8f3a4a', '#5f1f2f', 16, 15)),
+    v('Yellow onion','Brown skin, for cooking','', d.bulb('#c9894a', '#8f5a2a', 16, 15)),
+    v('Spring onion','Eaten young, leaves and all','', d.springOnion())],
+  garlic:[
+    v('Wild garlic','Small bulb, Central Asia','wild', d.garlic('#e4dccb', '#b8a88a', false, .7)),
+    v('White garlic','White garlic, many cloves','this', d.garlic('#efe8da', '#cdbfdc')),
+    v('Purple garlic','Purple-streaked skin','', d.garlic('#e8d0e0', '#9a5a8a')),
+    v('Solo garlic','One single round clove','', d.garlic('#f3eee2', '', true, .8))],
+  banana:[
+    v('Wild banana','Packed with hard seeds','wild', d.seededBanana()),
+    v('Lakatan','Sweet, popular here','common', d.bananas('#f0cf45', 4, 34, 14, 7)),
+    v('Lady finger','Small, very sweet','', d.bananas('#f3c43a', 5, 24, 10, 6)),
+    v('Horn plantain','Long horn plantain, for frying','', d.bananas('#c9c04a', 2, 40, 16, 9)),
+    v('Cavendish','The supermarket banana','', d.bananas('#f3d65a', 4, 38, 14, 7.5))],
+  lime:[
+    v('Citron','Big, bumpy, thick peel','parent', d.citrus('#e8d24a', 13, {oblong:true, rough:true})),
+    v('Papeda','Small, sour, wild','parent', d.citrus('#7f9f3a', 10, {rough:true, leaf:true})),
+    v('Key lime','Small, sour, fragrant','this', d.citrus('#8fbf3a', 12, {leaf:true})),
+    v('Pomelo','Ancestor of oranges','parent', d.citrus('#c9d86a', 19, {flat:true})),
+    v('Mandarin','Ancestor of oranges','parent', d.citrus('#f08a2a', 13, {flat:true, leaf:true})),
+    v('Lemon','Citron × bitter orange','', d.citrus('#f2d43a', 13, {oblong:true, nipple:true})),
+    v('Calamansi','Mandarin × kumquat','', d.sh(14) + d.citrus('#9fbf3a', 7, {}).replace(d.sh(7), '').replace('translate(30 47)','translate(22 47)') + d.citrus('#e8a83a', 7, {}).replace(d.sh(7), '').replace('translate(30 47)','translate(38 45)'))],
+  mushroom:[
+    v('Wild oyster','On dead trees in the forest','wild', d.onLog()),
+    v('Grey oyster','The most farmed kind','this', d.oyster('#b8ac98', '#8f8473')),
+    v('White oyster','Paler strain of the same kind','', d.oyster('#f7f2e8', '#cfc4b0').replace(/fill="#f7f2e8"/g,'fill="#f7f2e8" stroke="#cfc4b0" stroke-width="1"')),
+    v('Golden oyster','A yellow relative','', d.oyster('#f0d24a', '#c9a830')),
+    v('King oyster','Thick stem, small cap','', d.kingOyster())]
+};})();
+/* ================= Family tree ================= */
+// Each step: [when, tokens, note]. Tokens: variety names (optionally "Name|Short label"), 'x' for a cross, '>' for "became".
+VARIETIES.lime.push({n:'Bitter orange', note:'Pomelo × mandarin', tag:'extra', svg: VD.citrus('#e8902a', 13, {flat:true})});
+const TREE = {
+  tomato:[['Wild · Andes of South America',['Wild currant tomato|Wild currant'],'Pea-sized fruit on a sprawling vine.'],
+    ['Thousands of years ago · Mexico',['Wild currant tomato|Wild currant','>','Cherry tomato|Cherry'],'Farmers kept the biggest, sweetest fruit. Cherry tomatoes are still close to this early form.','Bigger, sweeter fruit'],
+    ['Later · Europe and beyond',['Cherry tomato|Cherry','>','Roma','Beefsteak'],'Bred for size, firm flesh and shape.','Huge fruit and firm flesh']],
+  chili:[['Wild · the Americas',['Wild chiltepin|Chiltepin'],'Tiny, round and very hot. Birds eat them and spread the seeds.'],
+    ['About 6,000 years ago · Mexico',['Wild chiltepin|Chiltepin','>','Bird\'s eye','Long red chili'],'Farmers chose bigger pods. Bird\'s eye chili stays closest to the wild form.','Bigger pods'],
+    ['1500s · Southeast Asia',[],'Portuguese traders brought chilies here, and they became part of local cooking.'],
+    ['A natural change',['Wild chiltepin|Chiltepin','>','Bell pepper'],'In some plants the heat switched off. Growers kept those and bred sweet peppers.','No heat, big fruit']],
+  eggplant:[['Wild · tropical Asia',['Wild eggplant'],'Small, spiny and bitter.'],
+    ['Over 2,000 years · India, China, Southeast Asia',['Wild eggplant','>','Long eggplant','Globe'],'Chosen for mild, smooth and larger fruit, long or round.','Bigger, milder, smooth fruit']],
+  capsicum:[['Wild · the Americas',['Wild chili'],'Tiny, hot berries.'],
+    ['A natural change',['Wild chili','>','Red capsicum|Capsicum'],'A gene change removed the heat. Growers bred big, thick-walled fruit.','No heat, thick walls'],
+    ['Same fruit, different day',['Green capsicum|Green','>','Red capsicum|Red'],'Green capsicum is picked early. Left on the plant, it turns red and sweeter.','Sweeter, riper fruit']],
+  cucumber:[['Wild · Himalayan foothills',['Wild cucumber'],'Small, spiny and bitter.'],
+    ['About 3,000 years ago · India',['Wild cucumber','>','Local cucumber'],'Growers bred the bitterness out.','Less bitterness'],
+    ['Modern breeding',['Local cucumber','>','Japanese cucumber|Japanese','Gherkin'],'Long and nearly seedless, or short for pickles.','Length and fewer seeds']],
+  pumpkin:[['Wild · the Americas',['Wild gourd'],'Hard shell, bitter flesh.'],
+    ['About 10,000 years ago',['Wild gourd','>','Pumpkin','Butternut'],'Chosen for soft, sweet flesh. Squash is one of the oldest crops.','Soft, sweet flesh']],
+  carrot:[['Wild · Europe and Asia',['Wild carrot'],'Thin, white, woody root.'],
+    ['About 1,100 years ago · Central Asia',['Wild carrot','>','Purple carrot|Purple','Yellow carrot|Yellow'],'Farmers kept the fattest, sweetest roots.','Fatter, sweeter roots'],
+    ['1600s · Europe',['Yellow carrot|Yellow','>','Orange carrot|Orange'],'Orange carrots were bred from yellow ones.','Orange colour'],
+    ['Today',['Orange carrot|Orange','>','Round carrot|Round'],'Plus many F1 hybrids, bred for even, sweet roots.','Short roots for pots']],
+  potato:[['Wild · Andes of South America',['Wild potato'],'Small, bitter tubers that can be toxic.'],
+    ['7,000–10,000 years ago · Andes',['Wild potato','>','Purple potato|Purple','Red potato|Red'],'Andean farmers grew thousands of kinds.','Safe, tasty tubers'],
+    ['1500s onward · worldwide',['White potato'],'Sailors spread potatoes around the world. Every tuber is a clone of its parent.']],
+  sweetpotato:[['Wild relative · the Americas',['Wild morning glory|Wild relative'],'Thin, stringy roots.'],
+    ['Thousands of years ago · Central and South America',['Wild morning glory|Wild relative','>','Orange sweet potato|Orange','Purple sweet potato|Purple'],'Bred for big, sweet roots. Its genes even carry DNA that a soil bacterium slipped in naturally.','Big, sweet roots']],
+  cabbage:[['Wild · European sea cliffs',['Wild cabbage'],'One wild plant with loose leaves.'],
+    ['Bred for leaves',['Wild cabbage','>','Cabbage','Kale'],'Tight heads, or big curly leaves.','Leaves'],
+    ['Bred for flowers',['Wild cabbage','>','Broccoli','Cauliflower'],'Swollen flower buds, or a white flower head.','Flower buds'],
+    ['Bred for stems',['Wild cabbage','>','Kailan'],'Thick, tender stems. All six are one species.','Stems']],
+  lettuce:[['Wild · Middle East',['Prickly lettuce'],'A bitter weed with milky sap.'],
+    ['About 4,500 years ago · Egypt',[],'First grown for oil pressed from its seeds.'],
+    ['Later · bred for leaves',['Prickly lettuce','>','Leaf lettuce','Romaine','Butterhead'],'Chosen for soft, mild leaves in many shapes.','Soft, mild leaves']],
+  cilantro:[['Wild · Mediterranean',['Wild coriander'],'A small herb, little changed today.'],
+    ['Bred two ways',['Wild coriander','>','Leafy coriander|Leafy','Seed coriander|Seed'],'Some types make lots of leaves; others make big seed heads.','More leaves, or more seed'],
+    ['In the kitchen',['Seed coriander|Seed','>','Coriander seed'],'The dried seeds are sold as the spice coriander.']],
+  mint:[['Two wild parents',['Water mint','Spearmint'],'Mints cross with each other easily.'],
+    ['Natural cross',['Water mint','x','Spearmint','>','Peppermint'],'The cross is stronger and cooler than either parent. It sets almost no seed, so it spreads only by runners.','Strong, cool flavour'],
+    ['Today',['Kitchen mint'],'Kitchen mint is grown from cuttings, so every plant is a copy of another.']],
+  onion:[['Wild relative · Central Asia',['Wild relative'],'No truly wild onion is known today.'],
+    ['Thousands of years of farming',['Wild relative','>','Shallot','Red onion','Yellow onion'],'Shallots grow in clusters; onions make one big bulb.','Bigger bulbs']],
+  garlic:[['Wild · Central Asia',['Wild garlic'],'A small bulb that still makes seed.'],
+    ['Thousands of years ago',['Wild garlic','>','White garlic','Purple garlic|Purple'],'Most garlic stopped making seed, so it has been passed on as cloves ever since.','Bigger cloves']],
+  banana:[['Wild · Southeast Asia',['Wild banana'],'Wild bananas from this region, Malaysia included, are packed with hard seeds.'],
+    ['Thousands of years ago',['Wild banana','>','Lakatan','Lady finger','Horn plantain'],'Farmers found rare seedless plants, some of them crosses between wild species, and spread them by suckers.','No seeds']],
+  lime:[['Wild ancestors · Asia',['Citron','Papeda','Pomelo','Mandarin'],'Nearly all citrus come from a few wild kinds like these.'],
+    ['Chance cross',['Citron','x','Papeda','>','Key lime'],'Key lime is a cross, not a wild plant. Citron gave it sour juice and a fragrant peel; papeda gave small fruit and a tree that copes with tropical heat.','Sour juice, small hardy tree'],
+    ['Cross, then cross again',['Pomelo','x','Mandarin','>','Bitter orange'],'Pomelo gave size and bitterness; mandarin gave the orange colour.'],
+    ['',['Citron','x','Bitter orange','>','Lemon'],'Citron gave the sour juice and pointed shape; bitter orange gave a thinner peel. Life does not give us lemons. People found these chance crosses and kept them going by grafting.','Juice and a thinner peel']],
+  mushroom:[['Wild · dead trees worldwide',['Wild oyster'],'Grows on fallen logs in the forest.'],
+    ['About 1917 · first farmed in Germany',['Wild oyster','>','Grey oyster','White oyster|White'],'Farm strains are wild ones chosen for big, fast flushes.','Big, fast flushes']]
+};
+const ftArrow = `<svg class="ft-arrow" viewBox="0 0 24 14" aria-label="became"><path d="M1 7H20M14 2l6 5-6 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function ftNode(k, token, seen){
+  const [name, label] = token.split('|'), v = VARIETIES[k].find(x => x.n === name); if(!v) return '';
+  const first = !seen.has(name); seen.add(name);
+  const me = (v.tag === 'this' || v.tag === 'common') && first;
+  return `<div class="ft-n ${me ? 'me' : ''}"><svg viewBox="0 0 60 60" aria-label="${esc(v.n)}${me ? ', the one this packet grows' : ''}" role="img">${v.svg}</svg><b>${esc(label || name)}</b></div>`;
+}
+const ftPlus = `<span class="ft-plus" aria-label="crossed with"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></span>`;
+function ftRow(k, toks, seen){
+  const at = toks.indexOf('>'), left = at < 0 ? toks : toks.slice(0, at), right = at < 0 ? [] : toks.slice(at + 1);
+  const cross = left.includes('x');
+  const part = (list, group) => { const html = list.map(t => t === 'x' ? ftPlus : ftNode(k, t, seen)).join(''); return group && list.length > 1 ? `<div class="ft-group">${html}</div>` : html; };
+  return { cross, html: `<div class="ft-row">${part(left, !cross)}${at < 0 ? '' : ftArrow + part(right, true)}</div>` };
+}
+function familyTile(P){
+  const k = P.id, I = P.info, steps = TREE[k]; if(!I || !steps) return '';
+  const seen = new Set();
+  const items = steps.filter(st => st[1].length).map(([when, toks, note, why], i) => {
+    const r = ftRow(k, toks, seen);
+    const tag = why ? `<div class="ft-why ${r.cross ? 'cross' : ''}">${r.cross ? ftPlus : ICON.check}<span>${r.cross ? 'Crossed' : 'Selected'} for <b>${esc(why[0].toLowerCase() + why.slice(1))}</b></span></div>` : '';
+    return `<li class="ft-step ${when ? '' : 'cont'}" style="--i:${i}">${when ? `<div class="ft-when">${esc(when)}</div>` : ''}${r.html}${tag}</li>`;
+  }).join('');
+  return `<details class="tile t4 ft"><summary><h3>Genetics</h3>${I.origin ? `<span class="lv lv-plain">${esc(I.origin[0])}</span>` : ''}${ICON.chev}</summary>
+    <ol class="ft-rail">${items}</ol></details>`;
+}
+function seedTile(P){
+  const I = P.info; if(!I) return '';
+  return `<div class="tile t4"><h3>Saving seed</h3><div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px"><span class="lv ${LEVEL[I.replant[0]][1]}">${LEVEL[I.replant[0]][0]}</span><p>${esc(I.replant[1])}</p></div></div>`;
+}
+const gradeBadge = P => P.info ? `<span class="lv ${LEVEL[P.info.grade[0]][1]}" title="${esc(P.info.grade[1])}">${LEVEL[P.info.grade[0]][0]}</span>` : '';
+
+/* ================= Icons ================= */
+const sv = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ICON = {
+  garden: sv('<path d="M12 21v-9"/><path d="M12 12c0-4 3-7 8-7 0 5-3 7-8 7z"/><path d="M12 14c0-3-2.5-5-7-5 0 4 2.5 5 7 5z"/>'),
+  book: sv('<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>'),
+  plus: sv('<path d="M12 5v14M5 12h14"/>'),
+  back: sv('<path d="M15 5l-7 7 7 7"/>'),
+  x: sv('<path d="M6 6l12 12M18 6L6 18"/>'),
+  sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>'),
+  drop: sv('<path d="M12 3c3 4.5 6 7.6 6 11a6 6 0 0 1-12 0c0-3.4 3-6.5 6-11z"/>'),
+  pot: sv('<path d="M14 4h6v6"/><path d="M20 4l-6.5 6.5"/><path d="M10 20H4v-6"/><path d="M4 20l6.5-6.5"/>'),
+  feed: sv('<path d="M7 8h10l1 12H6z"/><path d="M8 8V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V8"/>'),
+  gear: sv('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  replant: sv('<path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7"/><path d="M20 4v4.7h-4.7"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 15.3"/><path d="M4 20v-4.7h4.7"/>'),
+  grade: sv('<path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 14l4-5"/><circle cx="12" cy="14" r="1.3" fill="currentColor" stroke="none"/>'),
+  dna: sv('<path d="M7 3c0 6 10 6 10 12s-10 3-10 6"/><path d="M17 3c0 6-10 6-10 12s10 3 10 6"/><path d="M8.5 6.5h7M8 18h8M9.5 10h5"/>'),
+  cross: sv('<path d="M6 3v4a6 6 0 0 0 6 6"/><path d="M18 3v4a6 6 0 0 1-6 6v8"/><circle cx="6" cy="3" r=".6"/><circle cx="18" cy="3" r=".6"/>'),
+  camera: sv('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'),
+  chev: sv('<path d="M6 9l6 6 6-6"/>'),
+  check: sv('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  info: sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/>')
+};
+
+/* ================= Helpers ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const today = () => ymd(new Date());
+const addDays = (s,n) => { const d = parse(s); d.setDate(d.getDate()+n); return ymd(d); };
+const diff = (a,b) => Math.round((parse(b) - parse(a)) / 86400000);
+const fmt = s => parse(s).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+const uid = () => Math.random().toString(36).slice(2,10);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const ease = x => 1 - Math.pow(1 - clamp(x,0,1), 2);
+const n1 = v => Math.round(v*10)/10;
+const plural = (n,w) => `${n} ${w}${n===1?'':'s'}`;
+const wk = d => Math.floor(d/7) + 1;
+function lerpColor(a,b,t){
+  const pa = parseInt(a.slice(1),16), pb = parseInt(b.slice(1),16);
+  const ch = (x,y) => Math.round(x + (y-x)*t);
+  return '#' + [ch(pa>>16,pb>>16), ch((pa>>8)&255,(pb>>8)&255), ch(pa&255,pb&255)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+/* ================= Plant illustration ================= */
+function leafPath(shape,x,y,L,a,c){
+  const leaf = (lx,ly,ll,la,w) => `<path transform="translate(${n1(lx)} ${n1(ly)}) rotate(${n1(la)})" d="M0 0C${n1(ll*.3)} ${n1(-w)} ${n1(ll*.75)} ${n1(-w*.85)} ${n1(ll)} 0C${n1(ll*.75)} ${n1(w*.85)} ${n1(ll*.3)} ${n1(w)} 0 0Z" fill="${c}"/>`;
+  if(shape === 'compound'){
+    const l = L*.42;
+    return `<g transform="translate(${n1(x)} ${n1(y)}) rotate(${n1(a)})"><path d="M0 0L${n1(L)} 0" stroke="#4f7d34" stroke-width="1"/>`
+      + leaf(L*.38,0,l,-55,l*.38) + leaf(L*.38,0,l,55,l*.38) + leaf(L*.7,0,l*.9,-45,l*.34) + leaf(L*.7,0,l*.9,45,l*.34) + leaf(L,0,l*1.1,0,l*.4) + '</g>';
+  }
+  if(shape === 'heart'){
+    const W = L*.5;
+    return `<g transform="translate(${n1(x)} ${n1(y)}) rotate(${n1(a)})"><path d="M0 0C${n1(L*.05)} ${n1(-W*1.25)} ${n1(L*.8)} ${n1(-W*.95)} ${n1(L)} 0C${n1(L*.8)} ${n1(W*.95)} ${n1(L*.05)} ${n1(W*1.25)} 0 0Z" fill="${c}"/></g>`;
+  }
+  let LL = L, W;
+  if(shape === 'round') W = L*.5;
+  else if(shape === 'small'){ LL = L*.72; W = LL*.45; }
+  else W = L*.36;
+  return `<g transform="translate(${n1(x)} ${n1(y)}) rotate(${n1(a)})"><path d="M0 0C${n1(LL*.3)} ${n1(-W)} ${n1(LL*.75)} ${n1(-W*.85)} ${n1(LL)} 0C${n1(LL*.75)} ${n1(W*.85)} ${n1(LL*.3)} ${n1(W)} 0 0Z" fill="${c}"/><path d="M1 0L${n1(LL*.85)} 0" stroke="rgba(0,0,0,.16)" stroke-width=".7"/></g>`;
+}
+function smallFlower(x, y, k, color, open){
+  if(open < .35) return `<circle cx="${n1(x)}" cy="${n1(y)}" r="${n1(1.8*k)}" fill="#7fae5a"/><circle cx="${n1(x)}" cy="${n1(y-.8)}" r="${n1(.9*k)}" fill="${color}"/>`;
+  let out = '';
+  for(let q = 0; q < 5; q++){ const a = (q*72 - 90)*Math.PI/180; out += `<circle cx="${n1(x + Math.cos(a)*2.4*k)}" cy="${n1(y + Math.sin(a)*2.4*k)}" r="${n1(2.1*k)}" fill="${color}" stroke="rgba(0,0,0,.08)" stroke-width=".4"/>`; }
+  return out + `<circle cx="${n1(x)}" cy="${n1(y)}" r="${n1(1.2*k)}" fill="#d9a400"/>`;
+}
+function fruitSVG(type, x, y, side, col){
+  if(type === 'round') return `<path d="M${n1(x)} ${n1(y)}q${side*2} 3 ${side*3} 5" stroke="#4f7d34" stroke-width="1" fill="none"/><circle cx="${n1(x+side*3)}" cy="${n1(y+9)}" r="4.3" fill="${col}"/><circle cx="${n1(x+side*1.7)}" cy="${n1(y+7.6)}" r="1" fill="#fff" opacity=".45"/>`;
+  if(type === 'chili') return `<g transform="translate(${n1(x)} ${n1(y+1)}) rotate(${side*15})"><path d="M0 0C2.5 3 3 11 .5 17C-1.5 11-2 3 0 0Z" fill="${col}"/><circle r="1.3" fill="#4f7d34"/></g>`;
+  if(type === 'eggplant') return `<g transform="translate(${n1(x)} ${n1(y+1)}) rotate(${side*12})"><path d="M0 0C4 2 5 11 3.2 17C1.5 21-3 21-4 17C-5 11-3.5 3 0 0Z" fill="${col}"/><path d="M-3 1.5L0-1 3 1.5 1.6 3.6-1.6 3.6Z" fill="#4f7d34"/></g>`;
+  if(type === 'bell') return `<g transform="translate(${n1(x)} ${n1(y+2)}) rotate(${side*6})"><path d="M0-1V2" stroke="#4f7d34" stroke-width="1.4"/><path d="M-4.5 2C-6.5 6-5.5 12-2.5 13C-.8 13.6 0 12 0 12C0 12 .8 13.6 2.5 13C5.5 12 6.5 6 4.5 2C2.5.8-2.5.8-4.5 2Z" fill="${col}"/></g>`;
+  if(type === 'cucumber') return `<g transform="translate(${n1(x)} ${n1(y+1)}) rotate(${side*8})"><rect x="-2.5" y="0" width="5" height="16" rx="2.5" fill="${col}"/><circle cx="-.8" cy="4" r=".45" fill="#e3edc3"/><circle cx="1" cy="8" r=".45" fill="#e3edc3"/><circle cx="-.6" cy="12" r=".45" fill="#e3edc3"/></g>`;
+  return '';
+}
+const soilWin = (cont, baseY) => cont === 'ground' ? {cx:60, cy:baseY+11, rx:32, ry:8} : {cx:60, cy:baseY+13, rx:22, ry:9};
+
+function plantSVG(P, ord, t, o = {}){
+  const v = P.visual, cont = o.container || 'pot';
+  const soil = '#5a3b26';
+  let base = '', baseY, s = '';
+  const leafC = v.leafColor || '#4c8a3a', leafHi = v.leafHi || '#6fae4f';
+  const g = Math.max(1, ord + t);
+
+  /* ---- mushrooms grow from their own bag ---- */
+  if(v.form === 'mushroom'){
+    const c = ord === 0 ? t : 1;
+    base = `<path d="M50 54L60 44L70 54Z" fill="#ddd4c4"/><path d="M42 56Q40 54 44 52H76Q80 54 78 56L80 124Q80 127 77 127H43Q40 127 40 124Z" fill="#cdb48c"/>`;
+    [[50,70,7],[66,82,9],[52,98,8],[68,112,7],[56,118,6],[63,64,6]].forEach(([x,y,r],i) => {
+      base += `<ellipse cx="${x}" cy="${y}" rx="${n1(r*(.4 + .8*c))}" ry="${n1(r*.7*(.4 + .8*c))}" fill="#fbf8f0" opacity="${n1(.25 + .7*c)}"/>`;
+    });
+    base += `<path d="M44 58V122" stroke="#fff" stroke-width="2" opacity=".35"/>`;
+    if(ord >= 1){
+      const size = ord === 1 ? 1 + t*1.6 : ord === 3 ? 3 + t*4 : 7 + t*1.5;
+      [[41,82,-1],[79,96,1],[41,110,-1]].forEach(([x,y,side]) => {
+        for(let k = 0; k < 3; k++){
+          const dy = (k-1)*size*.85, sz = size*(k === 1 ? 1 : .8);
+          if(ord === 1){ s += `<circle cx="${n1(x + side*(1 + k))}" cy="${n1(y + dy*.8)}" r="${n1(sz*.6)}" fill="#efe6d4" stroke="#c9b894" stroke-width=".5"/>`; continue; }
+          const cx = x + side*sz*.9, cy = y + dy;
+          s += `<path d="M${x} ${n1(y)}L${n1(cx)} ${n1(cy)}" stroke="#e6dbc6" stroke-width="${n1(sz*.3)}" stroke-linecap="round"/>`
+            + `<ellipse cx="${n1(cx + side*sz*.25)}" cy="${n1(cy)}" rx="${n1(sz)}" ry="${n1(sz*.5)}" transform="rotate(${side*(k-1)*12} ${n1(cx)} ${n1(cy)})" fill="#e9dfcc" stroke="#bcaa88" stroke-width=".6"/>`
+            + `<path d="M${n1(cx)} ${n1(cy)}l${n1(side*sz*.8)} ${n1(-sz*.2)}M${n1(cx)} ${n1(cy)}l${n1(side*sz*.8)} ${n1(sz*.2)}" stroke="#cbbb9c" stroke-width=".5"/>`;
+        }
+      });
+    }
+    return wrap(base + `<g class="sway">${s}</g>`, P.name);
+  }
+
+  if(cont === 'tray'){
+    baseY = 104;
+    base = `<rect x="22" y="102" width="76" height="24" rx="3" fill="#3a4537"/><rect x="22" y="102" width="76" height="4" fill="#4a5747"/><path d="M47 106v20M73 106v20" stroke="#2c352a" stroke-width="1.5"/>`
+      + `<ellipse cx="34.5" cy="104" rx="9" ry="2.2" fill="${soil}"/><ellipse cx="60" cy="104" rx="10" ry="2.4" fill="${soil}"/><ellipse cx="85.5" cy="104" rx="9" ry="2.2" fill="${soil}"/>`;
+    if(ord >= 1) base += `<path d="M34 104q-.5-5 2.5-7M86 104q.5-5-2.5-7" stroke="#8fc25e" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+  } else if(cont === 'ground'){
+    baseY = 106;
+    base = `<path d="M4 109Q60 99 116 109L116 128L4 128Z" fill="${soil}"/><path d="M14 116h8M38 122h6M82 117h10M98 124h5" stroke="#3f2818" stroke-width="1.4" stroke-linecap="round"/>`;
+  } else if(cont === 'none'){
+    baseY = 116;
+    base = `<ellipse cx="60" cy="117" rx="36" ry="4" fill="#d9ccb4"/>`;
+  } else {
+    baseY = 97;
+    base = `<path d="M30 100L90 100L84 127L36 127Z" fill="#d98a75"/><rect x="26" y="93.5" width="68" height="9" rx="2.5" fill="#e6a18e"/><ellipse cx="60" cy="96.5" rx="31" ry="3.2" fill="${soil}"/><path d="M37 112L83 112" stroke="#c4705b" stroke-width="1" opacity=".6"/>`;
+  }
+  const small = cont === 'tray';
+
+  /* ---- seed on day 0 ---- */
+  if(ord === 0 && P.start === 'seed' && !['banana','tree'].includes(v.form)){
+    s += `<ellipse cx="60" cy="${baseY+.4}" rx="3.2" ry="2.2" fill="#e8d6a8" stroke="#a88a5a" stroke-width=".8" transform="rotate(-20 60 ${baseY})"/>`;
+    s += t > .5 ? `<path d="M60 ${baseY-1}q-1-5 3-6" stroke="#9cc46a" stroke-width="1.6" fill="none" stroke-linecap="round"/>` : `<circle cx="48" cy="${baseY-6}" r="1.2" fill="#7fb3d5" opacity=".7"/><circle cx="73" cy="${baseY-9}" r="1" fill="#7fb3d5" opacity=".6"/>`;
+    return wrap(base + `<g class="sway">${s}</g>`, P.name);
+  }
+
+  /* ---- onion and garlic: upright leaves on a swelling bulb ---- */
+  if(v.form === 'bulb'){
+    let L = 10 + (v.maxH - 10)*ease((g-1)/4.5); if(small) L = Math.min(L, 40);
+    const n = Math.min(9, 2 + Math.round(g*1.2)), yel = ord === 6 ? t : 0;
+    const r = ord >= 3 ? 3 + 8*ease((g-3)/3) : 2.6, topY = baseY - r*.9;
+    s += `<ellipse cx="60" cy="${n1(baseY - r*.3)}" rx="${n1(r)}" ry="${n1(r*.85)}" fill="${v.bulbColor}"/>`;
+    if(v.stripe) s += `<path d="M${n1(60-r*.4)} ${n1(baseY - r*.9)}Q${n1(60-r*.6)} ${n1(baseY-r*.3)} ${n1(60-r*.3)} ${n1(baseY + r*.4)}M${n1(60+r*.4)} ${n1(baseY - r*.9)}Q${n1(60+r*.6)} ${n1(baseY-r*.3)} ${n1(60+r*.3)} ${n1(baseY + r*.4)}" stroke="${v.stripe}" stroke-width=".8" fill="none"/>`;
+    else s += `<path d="M${n1(60-r*.5)} ${n1(baseY - r*.6)}Q60 ${n1(baseY + r*.5)} ${n1(60+r*.5)} ${n1(baseY - r*.6)}" stroke="#8f4a3a" stroke-width=".7" fill="none" opacity=".6"/>`;
+    for(let i = 0; i < n; i++){
+      const a = n === 1 ? 0 : -16 + 32*(i/(n-1)) + ((i*37)%5 - 2);
+      const Li = L*(.75 + .25*((i*7)%4)/3), bend = a*.5 + (ord === 6 ? a*t*1.6 : 0);
+      const col = lerpColor(lerpColor(leafC, leafHi, (i%3)/3), '#c9b25a', yel*.85);
+      s += `<path transform="translate(60 ${n1(topY)}) rotate(${n1(a)})" d="M-1.6 0Q${n1(-1.2 + bend*.5)} ${n1(-Li*.55)} ${n1(bend)} ${n1(-Li)}Q${n1(1.2 + bend*.5)} ${n1(-Li*.55)} 1.6 0Z" fill="${col}"/>`;
+    }
+    return wrap(base + `<g class="sway">${s}</g>`, P.name);
+  }
+
+  /* ---- carrot: feathery leaves on an orange root shoulder ---- */
+  if(v.form === 'root'){
+    let L = 8 + (v.maxH - 8)*ease((g-1)/4.5); if(small) L = Math.min(L, 36);
+    const n = Math.min(9, 2 + Math.round(g*1.4));
+    if(ord >= 3){ const r = 3 + 5*ease((g-3)/3); s += `<ellipse cx="60" cy="${n1(baseY + .5)}" rx="${n1(r)}" ry="${n1(r*.55)}" fill="${v.rootColor}"/><path d="M${n1(60-r*.5)} ${n1(baseY+.5)}h${n1(r*.4)}M${n1(60+r*.1)} ${n1(baseY+1.5)}h${n1(r*.4)}" stroke="#c96a20" stroke-width=".6"/>`; }
+    for(let i = 0; i < n; i++){
+      const a = n === 1 ? 0 : -50 + 100*(i/(n-1));
+      const Li = L*(.65 + .35*(1 - Math.abs(a)/60));
+      s += ord === 1 ? leafPath('oval', 60, baseY, 6 + t*2, a - 90, '#8fc25e') : leafPath('compound', 60, baseY - 1, Li, a - 90, lerpColor(leafC, leafHi, (i%3)/2*.8));
+    }
+    return wrap(base + `<g class="sway">${s}</g>`, P.name);
+  }
+
+  /* ---- lettuce and cabbage: a rosette of broad leaves, cabbage forms a head ---- */
+  if(v.form === 'head'){
+    let L = 8 + (v.maxH - 8)*ease((g-1)/4.8); if(small) L = Math.min(L, 26);
+    const n = Math.min(12, 2 + Math.round(g*1.8));
+    const angs = [];
+    for(let i = 0; i < n; i++) angs.push(n === 1 ? 0 : -80 + 160*(i/(n-1)));
+    angs.sort((a,b) => Math.abs(b) - Math.abs(a)).forEach((a, i) => {
+      const Li = L*(.6 + .4*(1 - Math.abs(a)/95));
+      s += leafPath('round', 60, baseY, Li, a - 90, lerpColor(leafC, leafHi, i/n));
+    });
+    if(v.headColor && ord >= 5){
+      const r = ord === 5 ? 4 + t*8 : 12 + t*2;
+      s += `<circle cx="60" cy="${n1(baseY - r*.85)}" r="${n1(r)}" fill="${v.headColor}"/><path d="M${n1(60 - r*.6)} ${n1(baseY - r*.6)}Q60 ${n1(baseY - r*1.9)} ${n1(60 + r*.7)} ${n1(baseY - r*.9)}M${n1(60 - r*.2)} ${n1(baseY - r*.2)}Q${n1(60 + r*.2)} ${n1(baseY - r*1.4)} ${n1(60 + r*.8)} ${n1(baseY - r*.4)}" stroke="#a7c391" stroke-width=".9" fill="none"/>`;
+    }
+    return wrap(base + `<g class="sway">${s}</g>`, P.name);
+  }
+
+  /* ---- cilantro: a low clump of leaflets on thin stalks ---- */
+  if(v.form === 'clump'){
+    let L = 10 + (v.maxH - 10)*ease((g-1)/5); if(small) L = Math.min(L, 30);
+    const n = Math.min(10, 2 + Math.round(g*1.4));
+    for(let i = 0; i < n; i++){
+      const a = n === 1 ? 0 : -60 + 120*(i/(n-1)) + ((i*29)%9 - 4);
+      const Li = L*(.7 + .3*(1 - Math.abs(a)/70)), r = a*Math.PI/180;
+      const tx = 60 + Math.sin(r)*Li, ty = baseY - Math.cos(r)*Li*.9, ls = 3 + L*.12, dir = a - 90, col = lerpColor(leafC, leafHi, (i%3)/2*.8);
+      s += `<path d="M60 ${baseY}Q${n1(60 + Math.sin(r)*Li*.3)} ${n1(baseY - Li*.6)} ${n1(tx)} ${n1(ty)}" stroke="#6a9a45" stroke-width="1" fill="none"/>`
+        + (ord === 1 ? leafPath('oval', tx, ty, 6, dir, '#8fc25e') : leafPath('round', tx, ty, ls, dir - 40, col) + leafPath('round', tx, ty, ls, dir + 40, col) + leafPath('round', tx, ty, ls*1.1, dir, col));
+    }
+    return wrap(base + `<g class="sway">${s}</g>`, P.name);
+  }
+
+  /* ---- pumpkin: vines along the ground with big leaves ---- */
+  if(v.form === 'sprawl'){
+    const span = 4 + 46*ease((g-1.5)/4.5), y0 = baseY - 1.5, lsz = 6 + 7*ease((g-1)/4);
+    if(span > 6) s += `<path d="M60 ${y0}Q${n1(60 - span*.5)} ${n1(y0 - 5)} ${n1(60 - span)} ${n1(y0)}M60 ${y0}Q${n1(60 + span*.5)} ${n1(y0 - 5)} ${n1(60 + span)} ${n1(y0)}" stroke="#6a9a45" stroke-width="1.6" fill="none"/>`;
+    const spots = [[0,0]];
+    const per = Math.min(4, Math.floor(span/11));
+    for(let k = 1; k <= per; k++){ spots.push([-k/per, k]); spots.push([k/per, k]); }
+    spots.forEach(([f, k], i) => {
+      const x = 60 + span*f, y = y0 - 4*(1 - f*f), ph = lsz*(.9 + (i%2)*.3);
+      s += `<path d="M${n1(x)} ${n1(y)}L${n1(x + f*2)} ${n1(y - ph)}" stroke="#6a9a45" stroke-width="1"/>` + leafPath('round', x + f*2, y - ph, lsz, -90 + f*30 - 18, lerpColor(leafC, leafHi, (i%3)/2)) + leafPath('round', x + f*2, y - ph, lsz*.9, -90 + f*30 + 18, lerpColor(leafC, leafHi, ((i+1)%3)/2));
+    });
+    if(ord >= 4) [[-.55,0],[.35,1]].slice(0, ord === 4 ? 2 : 1).forEach(([f]) => { s += smallFlower(60 + span*f, y0 - 3, 1.5, v.flower, ord === 4 ? Math.max(t,.4) : 1); });
+    if(ord >= 5){
+      const ripe = ord === 5 ? t*.5 : .6 + t*.4, r = ord === 5 ? 3 + t*5 : 8 + t*2, px = 60 + span*.55, py = y0 - r*.75;
+      s += `<ellipse cx="${n1(px)}" cy="${n1(py)}" rx="${n1(r*1.2)}" ry="${n1(r)}" fill="${lerpColor('#7faa4a', v.fruitColor, ripe)}"/><path d="M${n1(px - r*.45)} ${n1(py - r*.9)}Q${n1(px - r*.75)} ${n1(py)} ${n1(px - r*.45)} ${n1(py + r*.9)}M${n1(px + r*.45)} ${n1(py - r*.9)}Q${n1(px + r*.75)} ${n1(py)} ${n1(px + r*.45)} ${n1(py + r*.9)}M${n1(px)} ${n1(py - r)}V${n1(py + r)}" stroke="rgba(0,0,0,.15)" stroke-width=".8" fill="none"/><path d="M${n1(px)} ${n1(py - r)}l1 -3" stroke="#6b5a3a" stroke-width="1.6"/>`;
+    }
+    return wrap(base + `<g class="sway">${s}</g>`, P.name);
+  }
+
+  /* ---- banana: a soft trunk with big paddle leaves ---- */
+  if(v.form === 'banana'){
+    const hT = (6 + v.maxH*.5*ease((g-1)/5)) * (cont === 'pot' ? .85 : 1), topY = baseY - hT, w = 2.5 + 3*ease((g-1)/5);
+    s += `<path d="M${n1(60 - w)} ${baseY}L${n1(60 - w*.8)} ${n1(topY)}H${n1(60 + w*.8)}L${n1(60 + w)} ${baseY}Z" fill="#a7b46e"/><path d="M${n1(60 - w*.3)} ${baseY}L${n1(60 - w*.25)} ${n1(topY)}M${n1(60 + w*.4)} ${baseY}L${n1(60 + w*.35)} ${n1(topY)}" stroke="#8a9a55" stroke-width=".7"/>`;
+    const n = Math.min(8, 2 + Math.round(g*1.1)), Lf = 10 + 32*ease((g-1)/5), W = Lf*.22;
+    for(let i = 0; i < n; i++){
+      const dir = n === 1 ? -90 : -165 + 150*(i/(n-1));
+      const col = lerpColor('#4f8f3a', '#7fb556', (i%2)*.7);
+      s += `<g transform="translate(60 ${n1(topY)}) rotate(${n1(dir)})"><path d="M0 0L${n1(Lf*.2)} 0" stroke="#8a9a55" stroke-width="1.2"/><path d="M${n1(Lf*.15)} 0C${n1(Lf*.3)} ${n1(-W)} ${n1(Lf*.85)} ${n1(-W)} ${n1(Lf)} 0C${n1(Lf*.85)} ${n1(W)} ${n1(Lf*.3)} ${n1(W)} ${n1(Lf*.15)} 0Z" fill="${col}"/><path d="M${n1(Lf*.15)} 0H${n1(Lf*.95)}" stroke="#d9e6b0" stroke-width=".7"/></g>`;
+    }
+    if(ord >= 4){
+      const ex = 60 + 15, ey = topY + 16;
+      s += `<path d="M60 ${n1(topY)}Q${n1(60 + 14)} ${n1(topY - 3)} ${n1(ex)} ${n1(ey)}" stroke="#8a9a55" stroke-width="1.4" fill="none"/>`;
+      if(ord >= 5){
+        const ripe = ord === 6 ? t : 0, col = lerpColor('#6f9a3a', v.fruitColor, ripe);
+        for(let r = 0; r < 3; r++){ for(let f = 0; f < 4; f++){
+          const bx = 60 + 6 + r*2.6 + f*1.6, by = topY + 3 + r*3.8 + f*.6;
+          s += `<path d="M${n1(bx)} ${n1(by)}q2.5 -1 4.5 -4" stroke="${col}" stroke-width="2.3" stroke-linecap="round" fill="none"/>`;
+        } }
+      }
+      if(!(ord === 6 && t > .4)) s += `<path d="M${n1(ex)} ${n1(ey)}c2.6 1 3.2 4.6 0 7.5c-3.2-2.9-2.6-6.5 0-7.5z" fill="#7a2f4a"/>`;
+    }
+    return wrap(base + `<g class="sway">${s}</g>`, P.name);
+  }
+
+  /* ---- lime: a small tree with a round canopy ---- */
+  if(v.form === 'tree'){
+    const h = 12 + (v.maxH - 12)*ease((g-1)/5.2) * (cont === 'pot' ? .85 : 1);
+    const cy = baseY - h*.62, R = 4 + h*.3;
+    s += `<path d="M60 ${baseY}L60 ${n1(cy)}M60 ${n1(baseY - h*.38)}L${n1(60 - R*.5)} ${n1(cy + R*.2)}M60 ${n1(baseY - h*.45)}L${n1(60 + R*.45)} ${n1(cy + R*.1)}" stroke="#7a5a3a" stroke-width="${n1(1.6 + g*.35)}" stroke-linecap="round"/>`;
+    const n = Math.min(64, 6 + Math.round(g*9));
+    for(let i = 0; i < n; i++){
+      const r = R*Math.sqrt((i + .5)/n), th = i*137.5*Math.PI/180;
+      s += leafPath('oval', 60 + r*Math.cos(th), cy + r*Math.sin(th)*.85, 4 + R*.1, i*137.5 % 360, lerpColor('#3f7a36', '#6fa54f', (i%3)/2));
+    }
+    if(ord >= 4) for(let i = 0; i < (ord === 4 ? 4 : 2); i++){ const th = (i*97 + 20)*Math.PI/180, r = R*.65; s += smallFlower(60 + r*Math.cos(th), cy + r*Math.sin(th)*.8, .8, v.flower, ord === 4 ? Math.max(t,.4) : 1); }
+    if(ord >= 5){
+      const ripe = ord === 5 ? t*.4 : .5 + t*.5, cnt = ord === 5 ? 3 + Math.round(t*2) : 6;
+      for(let i = 0; i < cnt; i++){ const th = (i*61 + 35)*Math.PI/180, r = R*(.45 + (i%3)*.18); s += `<circle cx="${n1(60 + r*Math.cos(th))}" cy="${n1(cy + r*Math.sin(th)*.85 + 2)}" r="3" fill="${lerpColor('#6f9e3a', v.fruitColor, ripe)}"/><circle cx="${n1(60 + r*Math.cos(th) - .9)}" cy="${n1(cy + r*Math.sin(th)*.85 + 1)}" r=".8" fill="#fff" opacity=".4"/>`; }
+    }
+    return wrap(base + `<g class="sway">${s}</g>`, P.name);
+  }
+
+  /* ---- default: an upright stem with leaves, flowers and fruit ---- */
+  let h = 8 + (v.maxH - 8)*ease((g-1)/5.5);
+  if(small) h = Math.min(h, 46);
+  const sway = 5, stemW = 1.4 + Math.min(g,6)*.42;
+  const pt = f => ({x: 60 + sway*f*f, y: baseY - h*f});
+  const top = pt(1);
+  if(v.stake && cont === 'pot' && ord >= 3){
+    s += `<path d="M74 ${baseY+2}L74 ${n1(baseY - h*.95)}" stroke="#b08a5a" stroke-width="2.2" stroke-linecap="round"/>`;
+    [.35,.65].forEach(f => { const p = pt(f); s += `<path d="M${n1(p.x)} ${n1(p.y)}L74 ${n1(p.y)}" stroke="#d9c79a" stroke-width="1.2"/>`; });
+  }
+  if(v.trellis && cont !== 'tray' && ord >= 3){
+    const ty = baseY - h*1.02;
+    s += `<path d="M44 ${baseY+1}V${n1(ty)}M76 ${baseY+1}V${n1(ty)}" stroke="#b08a5a" stroke-width="2" stroke-linecap="round"/>`;
+    for(let y = baseY - 12; y > ty; y -= 12) s += `<path d="M44 ${n1(y)}H76" stroke="#d9c79a" stroke-width=".8"/>`;
+    s += `<path d="M52 ${baseY}V${n1(ty)}M60 ${baseY}V${n1(ty)}M68 ${baseY}V${n1(ty)}" stroke="#e6d9b8" stroke-width=".6"/>`;
+  }
+  if(v.fruit === 'tuber' && ord >= 5){
+    const w0 = soilWin(cont, baseY), ripe = ord === 5 ? .4 + t*.4 : 1;
+    s += `<ellipse cx="${w0.cx}" cy="${w0.cy}" rx="${w0.rx}" ry="${w0.ry}" fill="#4a2f1e"/>`;
+    [[-11,-1],[8,1],[-1,3],[14,-2],[-17,2]].slice(0, ord === 5 ? 3 : 5).forEach(([dx,dy], i) => {
+      s += `<ellipse cx="${n1(w0.cx + dx)}" cy="${n1(w0.cy + dy)}" rx="${n1((3 + i%2)*ripe + 1)}" ry="${n1(2.6*ripe + .8)}" fill="${v.fruitColor}" transform="rotate(${(i*23)%40 - 20} ${n1(w0.cx + dx)} ${n1(w0.cy + dy)})"/>`;
+    });
+    s += `<path d="M60 ${baseY}V${n1(w0.cy)}" stroke="#d9c7a0" stroke-width=".8" opacity=".7"/>`;
+  }
+  s += `<path d="M60 ${baseY}Q60 ${n1(baseY - h*.5)} ${n1(top.x)} ${n1(top.y)}" stroke="#5f8f3b" stroke-width="${n1(stemW)}" fill="none" stroke-linecap="round"/>`;
+
+  const nodes = [];
+  if(ord === 1 && P.start === 'seed'){
+    const L = 7 + t*3;
+    s += leafPath('oval', top.x, top.y, L, -18, '#8fc25e') + leafPath('oval', top.x, top.y, L, -162, '#8fc25e');
+    if(t > .6) s += leafPath('oval', top.x, top.y, 4, -90, leafC);
+  } else {
+    const n = Math.min(16, Math.round(2 + (g-2)*2.4) + 2, Math.max(4, Math.round(h/5)));
+    for(let i = 0; i < n; i++){
+      const f = .16 + .78*(i/Math.max(1,n-1));
+      const p = pt(f), side = i % 2 ? 1 : -1;
+      const size = (9 + 10*clamp((g-2)/3,0,1)) * (1.15 - .45*f) * (v.leafScale || 1);
+      const ang = side > 0 ? -(20 + 30*f) : -(160 - 30*f);
+      s += leafPath(v.leaf, p.x, p.y, size, ang, lerpColor(leafC, leafHi, f));
+      nodes.push({x: p.x + side*size*.55, y: p.y, side, f});
+    }
+    s += leafPath('oval', top.x, top.y, 6, -70, leafHi) + leafPath('oval', top.x, top.y, 6, -110, leafHi);
+  }
+  if(v.flower && ord >= 4 && nodes.length){
+    const upper = nodes.filter(nd => nd.f > .5);
+    const k = ord === 4 ? 1 + Math.round(t*3) : ord === 5 ? 2 : 1;
+    for(let j = 0; j < k; j++){
+      const nd = upper[(j*2 + 1) % upper.length] || {x: top.x, y: top.y, side: 1};
+      s += smallFlower(nd.x + nd.side*3, nd.y - 5, 1, v.flower, ord === 4 ? Math.max(t, .4) : 1);
+    }
+  }
+  if(v.fruit && v.fruit !== 'tuber' && ord >= 5 && nodes.length){
+    const ripe = ord === 5 ? t*.45 : .55 + t*.45;
+    const spots = nodes.filter(nd => nd.f > .3 && nd.f < .88);
+    const count = Math.min(spots.length, ord === 5 ? 2 + Math.round(t*2) : 4);
+    const green = {eggplant:'#9a7aae', chili:'#b8d94e', bell:'#4f8f34', cucumber:'#9cc46a'}[v.fruit] || '#86b850';
+    for(let j = 0; j < count; j++){
+      const nd = spots[Math.floor(j*spots.length/count)];
+      s += fruitSVG(v.fruit, nd.x, nd.y, nd.side, lerpColor(green, v.fruitColor, ripe*(j % 2 ? .75 : 1)));
+    }
+  }
+  return wrap(base + `<g class="sway">${s}</g>`, P.name);
+}
+const wrap = (s, name) => `<svg class="plant-svg" viewBox="0 0 120 130" role="img" aria-label="${esc(name)} illustration">${s}</svg>`;
+
+
+/* ================= Harvest-only pictures (just the produce, no plant or soil) ================= */
+function harvestSVG(P){
+  const k = P.id, sh = `<ellipse cx="60" cy="116" rx="34" ry="4.5" fill="#3d3929" opacity=".07"/>`;
+  let s = '';
+  const hl = (x,y,r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity=".35"/>`;
+  if(k === 'tomato'){
+    s += `<path d="M36 40Q60 28 86 42" stroke="#4f7d34" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M46 37L46 56M60 33L64 52M74 37L82 60M54 35L54 76M68 35L72 82" stroke="#4f7d34" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+    [[46,66,11],[66,62,12],[84,72,11],[54,88,11],[75,94,11]].forEach(([x,y,r]) => { s += `<circle cx="${x}" cy="${y}" r="${r}" fill="#d8402c"/>${hl(x-4,y-4,2.6)}<path d="M${x-5} ${y-r+2}L${x} ${y-r-2}L${x+5} ${y-r+2}L${x} ${y-r+4}Z" fill="#4f8a3a"/>`; });
+  } else if(k === 'chili'){
+    [[-28,'#7ba43a'],[0,'#c9241b'],[26,'#a81d16']].forEach(([a,c]) => { s += `<g transform="translate(60 30) rotate(${a})"><path d="M0 2C7 8 8 38 2 70C-4 40-6 10 0 2Z" fill="${c}"/><path d="M-4 0h8l-1 6h-6z" fill="#4f7d34"/><path d="M0 0q2-8 8-10" stroke="#4f7d34" stroke-width="2.4" fill="none" stroke-linecap="round"/></g>`; });
+  } else if(k === 'eggplant'){
+    s += `<g transform="rotate(-25 60 72)"><path d="M60 34C78 40 84 70 80 92C76 114 44 114 40 92C36 70 42 40 60 34Z" fill="#4a1f5a"/><path d="M49 42L60 31L71 42L67 50H53Z" fill="#5f8f3b"/><path d="M60 31V19" stroke="#5f8f3b" stroke-width="4.5" stroke-linecap="round"/><path d="M50 62C47 76 48 90 53 100" stroke="#fff" stroke-width="3.5" opacity=".22" fill="none" stroke-linecap="round"/></g>`;
+  } else if(k === 'capsicum'){
+    s += `<path d="M36 52C28 72 32 100 47 106C55 109 60 101 60 101C60 101 65 109 73 106C88 100 92 72 84 52C73 43 47 43 36 52Z" fill="#d23a2a"/><path d="M60 52V100M46 56C42 72 44 90 50 100M74 56C78 72 76 90 70 100" stroke="#a82618" stroke-width="1.4" fill="none" opacity=".5"/><path d="M47 50Q60 41 73 50Q60 56 47 50Z" fill="#4f7d34"/><path d="M60 47V35Q60 30 67 28" stroke="#4f7d34" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M44 62C42 72 43 82 46 90" stroke="#fff" stroke-width="3.5" opacity=".28" fill="none" stroke-linecap="round"/>`;
+  } else if(k === 'cucumber'){
+    [[22,'#5a8f43',-8],[-28,'#3f6f30',6]].forEach(([a,c,dx]) => {
+      s += `<g transform="rotate(${a} 60 70)"><rect x="${49+dx}" y="22" width="22" height="94" rx="11" fill="${c}"/><path d="M${57+dx} 30V108" stroke="#fff" stroke-width="3" opacity=".18" stroke-linecap="round"/>`;
+      [[54,40],[64,54],[55,68],[65,82],[56,96]].forEach(([x,y]) => s += `<circle cx="${x+dx}" cy="${y}" r="1.1" fill="#e3edc3"/>`);
+      s += `<rect x="${57+dx}" y="16" width="6" height="8" rx="2" fill="#6b7f3f"/></g>`;
+    });
+  } else if(k === 'pumpkin'){
+    s += `<path d="M30 58C18 48 22 36 34 40C38 44 38 52 30 58Z" fill="#5f8f3b"/><ellipse cx="60" cy="82" rx="42" ry="30" fill="#e08a2e"/><ellipse cx="60" cy="82" rx="24" ry="30" fill="none" stroke="#c46f1c" stroke-width="1.6"/><ellipse cx="60" cy="82" rx="9" ry="30" fill="none" stroke="#c46f1c" stroke-width="1.6"/><path d="M30 72C28 80 30 90 35 96" stroke="#fff" stroke-width="3.5" opacity=".25" fill="none" stroke-linecap="round"/><path d="M58 54Q60 40 70 36" stroke="#6b5a3a" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  } else if(k === 'carrot'){
+    [[-16,46],[14,72]].forEach(([a,x]) => {
+      s += `<g transform="rotate(${a} ${x} 60)">` + leafPath('compound', x, 44, 30, -115, '#4f8a3c') + leafPath('compound', x, 44, 34, -90, '#6aa04a') + leafPath('compound', x, 44, 28, -65, '#4f8a3c')
+        + `<path d="M${x-9} 44Q${x} 40 ${x+9} 44L${x+1} 114Q${x} 116 ${x-1} 114Z" fill="#e8822e"/><path d="M${x-5} 58h6M${x+1} 72h5M${x-4} 86h5M${x} 98h3" stroke="#c96a20" stroke-width="1.3" stroke-linecap="round"/></g>`;
+    });
+  } else if(k === 'potato'){
+    [[42,80,20,15,-15],[78,84,18,14,20],[60,62,16,12,5]].forEach(([x,y,rx,ry,a]) => { s += `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" transform="rotate(${a} ${x} ${y})" fill="#d9b77a"/><circle cx="${x-6}" cy="${y-3}" r="1.3" fill="#a8844f"/><circle cx="${x+5}" cy="${y+3}" r="1.3" fill="#a8844f"/><circle cx="${x+1}" cy="${y-6}" r="1.1" fill="#a8844f"/>`; });
+  } else if(k === 'sweetpotato'){
+    [[-18,50,'#a4505a'],[16,70,'#b4505e']].forEach(([a,x,c]) => { s += `<g transform="rotate(${a} ${x} 72)"><path d="M${x} 28C${x+16} 40 ${x+16} 96 ${x} 112C${x-16} 96 ${x-16} 40 ${x} 28Z" fill="${c}"/><path d="M${x} 28L${x+2} 18M${x} 112L${x-1} 120" stroke="${c}" stroke-width="2" stroke-linecap="round"/><path d="M${x-6} 50C${x-8} 64 ${x-8} 78 ${x-5} 92" stroke="#fff" stroke-width="3" opacity=".22" fill="none" stroke-linecap="round"/></g>`; });
+  } else if(k === 'cabbage'){
+    [-150,-115,-65,-30,-90].forEach((a,i) => { s += leafPath('round', 60, 104, 40, a, i%2 ? '#6f9a7e' : '#7fa98a'); });
+    s += `<circle cx="60" cy="74" r="27" fill="#c9dcb2"/><path d="M42 82Q58 40 82 66M48 94Q60 60 84 82M38 70Q52 54 66 50" stroke="#a7c391" stroke-width="1.5" fill="none"/>`;
+  } else if(k === 'lettuce'){
+    [-165,-140,-115,-90,-65,-40,-15].forEach((a,i) => { s += leafPath('round', 60, 106, 46 - Math.abs(a+90)*.12, a, i%2 ? '#86bb52' : '#9ccc62'); });
+    [-120,-90,-60].forEach(a => { s += leafPath('round', 60, 104, 30, a, '#b9dc7a'); });
+  } else if(k === 'cilantro'){
+    const tips = [[34,40],[46,30],[60,24],[74,30],[86,40],[40,56],[80,56],[60,44]];
+    tips.forEach(([x,y]) => { s += `<path d="M60 112Q60 92 ${x} ${y}" stroke="#6a9a45" stroke-width="1.6" fill="none"/>`; });
+    tips.forEach(([x,y],i) => { const c = i%2 ? '#4f8f3f' : '#6fa552'; s += leafPath('round', x, y, 9, -130, c) + leafPath('round', x, y, 9, -50, c) + leafPath('round', x, y, 10, -90, c); });
+    s += `<rect x="54" y="92" width="12" height="7" rx="2" fill="#c4683f"/>`;
+  } else if(k === 'mint'){
+    s += `<path d="M60 116V24" stroke="#4f7f3f" stroke-width="3" stroke-linecap="round"/>`;
+    [[96,26],[76,23],[56,19],[38,14]].forEach(([y,L],i) => { const c = i%2 ? '#3f8a4f' : '#4f9a5a'; s += leafPath('oval', 60, y, L, -20, c) + leafPath('oval', 60, y, L, -160, c); });
+    s += leafPath('oval', 60, 26, 10, -70, '#6bb06a') + leafPath('oval', 60, 26, 10, -110, '#6bb06a');
+  } else if(k === 'onion' || k === 'garlic'){
+    const garlic = k === 'garlic', c = garlic ? '#efe8da' : '#b8654f', line = garlic ? '#cdbfdc' : '#8f4a3a';
+    s += `<path d="M56 46Q60 22 64 46Z" fill="${garlic ? '#e4dccb' : '#c9a07a'}"/><path d="M60 42C38 52 30 74 36 90C42 106 78 106 84 90C90 74 82 52 60 42Z" fill="${c}"/>`
+      + `<path d="M60 44C50 60 48 84 56 102M60 44C70 60 72 84 64 102M60 44C42 58 38 82 46 98M60 44C78 58 82 82 74 98" stroke="${line}" stroke-width="1.4" fill="none" opacity=".6"/>`
+      + `<path d="M52 103L48 112M57 104L56 114M63 104L64 114M68 103L72 112" stroke="#d9c7a0" stroke-width="1.6" stroke-linecap="round"/>${hl(46,70,4)}`;
+  } else if(k === 'banana'){
+    s += `<path d="M30 44L40 54" stroke="#6b7f3f" stroke-width="7" stroke-linecap="round"/>`;
+    [[0,'#f0cf45'],[1,'#e9c23a'],[2,'#f3d65a'],[3,'#e6bd33']].forEach(([i,c]) => {
+      const y0 = 52 + i*7, ex = 96 - i*3, ey = 64 - i*9 + 22, cy = 108 - i*6;
+      s += `<path d="M38 ${y0}Q62 ${cy} ${ex} ${ey}" stroke="${c}" stroke-width="12" fill="none" stroke-linecap="round"/><circle cx="${ex}" cy="${ey}" r="3" fill="#6b5a3a"/>`;
+    });
+  } else if(k === 'lime'){
+    s += `<circle cx="46" cy="74" r="25" fill="#8fbf3a"/><circle cx="46" cy="49.5" r="2.5" fill="#6b8f2a"/>${hl(38,66,5)}`
+      + `<circle cx="80" cy="84" r="23" fill="#8fbf3a"/><circle cx="80" cy="84" r="20" fill="#e3efa0"/>`;
+    for(let i = 0; i < 8; i++){ const a = i*Math.PI/4; s += `<path d="M80 84L${n1(80 + Math.cos(a)*19)} ${n1(84 + Math.sin(a)*19)}" stroke="#fbfde8" stroke-width="1.6"/>`; }
+    s += `<circle cx="80" cy="84" r="3" fill="#fbfde8"/>`;
+  } else if(k === 'mushroom'){
+    const cap = (x,y,sc,a) => `<g transform="translate(${x} ${y}) rotate(${a}) scale(${sc})"><path d="M0 0L0 18" stroke="#e6dbc6" stroke-width="7" stroke-linecap="round"/><path d="M0 2C-22 0-34-18-26-30C-16-40 16-40 26-30C34-18 22 0 0 2Z" fill="#e9dfcc" stroke="#bcaa88" stroke-width="1.2"/><path d="M0 0L-18-24M0 0L-6-30M0 0L6-30M0 0L18-24" stroke="#cbbb9c" stroke-width="1"/></g>`;
+    s += cap(40,84,.7,-24) + cap(82,82,.72,22) + cap(60,96,1,0);
+  }
+  return `<svg class="plant-svg" viewBox="0 0 120 130" role="img" aria-label="${esc(P.name)}">${sh}<g class="sway">${s}</g></svg>`;
+}
+function pic(P, ord, t, o){ return settings.pics === 'harvest' ? harvestSVG(P) : plantSVG(P, ord, t, o); }
+
+/* ================= Your own plants ================= */
+let customs = [];
+const STAGE_KEYS = ['sow','sprout','seedling','grow','flower','fruit','harvest'];
+function registerCustom(c){
+  let start = 0; const n = c.stages.length;
+  const stages = c.stages.map((st, i) => {
+    const d = Math.max(1, Math.round(+st.days || 1)), key = n === 1 ? 'grow' : STAGE_KEYS[Math.round(i * 6 / (n - 1))];
+    const s = S(key, st.label || `Stage ${i + 1}`, start, start + d, ''); start += d; return s;
+  });
+  CROPS[c.id] = {id:c.id, custom:true, src:c, name:c.name, local:'', start:'seed', band:FROM_SHORT[c.from], packet:CAT_COLOR[c.cat],
+    method:'pot', methods:['tray','pot','ground'], sun:'', water:'', pot:'', fertEvery:null, transplantDay:null, visual:{}, stages, cat:c.cat, from:c.from};
+}
+const hasPhoto = P => !!(P.custom && (P.src.cover || P.src.stages.some(s => s.photo)));
+const SPROUT = `<ellipse cx="60" cy="116" rx="34" ry="4.5" fill="#3d3929" opacity=".07"/><path d="M60 114V70" stroke="#6a9a45" stroke-width="4" stroke-linecap="round"/><path d="M60 78C60 60 72 50 90 50C89 68 78 78 60 78Z" fill="#7d9a4a"/><path d="M60 88C59 74 50 66 34 66C35 80 44 88 60 88Z" fill="#9cba62"/>`;
+function customPic(P, i){
+  const c = P.src, st = c.stages; let src = null;
+  if(i != null) for(let j = Math.min(i, st.length - 1); j >= 0 && !src; j--) src = st[j].photo;
+  src = src || c.cover || st.map(s => s.photo).find(Boolean);
+  return src ? `<img class="cphoto" src="${src}" alt="">` : `<svg class="plant-svg" viewBox="0 0 120 130" aria-hidden="true">${SPROUT}</svg>`;
+}
+function shrinkPhoto(file, max = 640){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', .74)); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(); };
+    img.src = url;
+  });
+}
+function customSheet(id, keep){
+  if(!keep){
+    const c = id ? customs.find(x => x.id === id) : null;
+    ui.draft = c ? JSON.parse(JSON.stringify(c)) : {id:null, name:'', cat:'fruitveg', from:'seed', cover:null,
+      stages:[{label:'Sprouting', days:7}, {label:'Growing', days:30}, {label:'Flowering', days:14}, {label:'Harvest', days:30}]};
+  }
+  const d = ui.draft;
+  const segR = (name, opts, cur, colors) => `<div class="seg">${Object.entries(opts).map(([v, l]) => `<input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${v === cur ? 'checked' : ''}><label for="${name}-${v}"><i class="dot" style="background:${colors[v]}"></i>${esc(l)}</label>`).join('')}</div>`;
+  const thumb = (src, key, big) => `<label class="ph ${big ? 'big' : ''} ${src ? 'has' : ''}" aria-label="${src ? 'Change photo' : 'Add photo'}">${src ? `<img src="${src}" alt="">` : ICON.camera}<input type="file" accept="image/*" data-ph="${key}" hidden></label>`;
+  let total = 0;
+  const rows = d.stages.map((st, i) => { const from = total; total += Math.max(1, +st.days || 1);
+    return `<li class="cst">${thumb(st.photo, i)}<div class="cst-f"><input class="input cs-name" data-i="${i}" value="${esc(st.label)}" placeholder="Stage name" maxlength="30"><div class="cst-d"><input class="input cs-days" data-i="${i}" type="number" min="1" inputmode="numeric" value="${st.days}" aria-label="Days in this stage"><span>days · day ${from}–${total}</span></div></div>${d.stages.length > 1 ? `<button class="x" data-act="cs-del" data-i="${i}" aria-label="Remove stage">${ICON.x}</button>` : ''}</li>`; }).join('');
+  const tracked = d.id ? plants.filter(p => p.type === d.id).length : 0;
+  openSheet(`${sheetHead(d.id ? 'Edit your plant' : 'Your own plant', d.id ? '' : 'For anything not in the library. Add its stages and a photo for each one; the right photo shows as it grows.')}
+    <div class="field"><label for="c-name">Name</label><input class="input" id="c-name" value="${esc(d.name)}" placeholder="Pandan, okra, dragon fruit…" maxlength="40"></div>
+    <div class="field"><span class="lbl">Cover photo <small>(optional)</small></span>${thumb(d.cover, 'cover', true)}</div>
+    <div class="field"><span class="lbl">Type</span>${segR('c-cat', CAT, d.cat, CAT_COLOR)}</div>
+    <div class="field"><span class="lbl">Grown from</span>${segR('c-from', FROM, d.from, FROM_COLOR)}</div>
+    <div class="field"><span class="lbl">Stages</span><small>Tap the camera to add a photo for that stage.</small><ol class="cstages">${rows}</ol><button class="btn" data-act="cs-add">${ICON.plus}Add stage</button></div>
+    ${d.id ? `<div class="sheet-actions" style="justify-content:flex-start;margin-bottom:6px"><button class="btn danger" data-act="cs-remove">${ui.confirm === 'cdel' ? `Yes, delete it${tracked ? ` and stop tracking ${plural(tracked, 'plant')}` : ''}` : 'Delete this plant'}</button></div>` : ''}
+    <div class="sheet-actions"><button class="btn" data-act="close">Cancel</button><button class="btn green" data-act="cs-save">${d.id ? 'Save changes' : 'Add to library'}</button></div>`, keep);
+  ui.sheet = 'custom';
+}
+function syncDraft(){
+  const d = ui.draft; if(!d) return;
+  const n = $('#c-name'); if(n) d.name = n.value;
+  const c = document.querySelector('input[name="c-cat"]:checked'); if(c) d.cat = c.value;
+  const f = document.querySelector('input[name="c-from"]:checked'); if(f) d.from = f.value;
+  document.querySelectorAll('.cs-name').forEach(el => { if(d.stages[+el.dataset.i]) d.stages[+el.dataset.i].label = el.value; });
+  document.querySelectorAll('.cs-days').forEach(el => { if(d.stages[+el.dataset.i]) d.stages[+el.dataset.i].days = Math.max(1, Math.round(+el.value || 1)); });
+}
+
+/* ================= Data ================= */
+const KEY = 'gardenbooks.v1';
+const STANDALONE = !!window.GB_STANDALONE;
+let plants = [], settings = {layout:'default', pics:'plant', stickyTop:true, cards:'shadow'};
+const ui = { view:'garden', detail:null, crop:null, sheet:null, confirm:null, f:{garden:{cat:'all',from:'all'}, library:{cat:'all',from:'all'}} };
+
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify({v:4, plants, settings, custom: customs})); return true; }
+  catch(e){ toast('Could not save. Try fewer or smaller photos.'); return false; }
+}
+function examples(){
+  const d = n => addDays(today(), -n);
+  const mk = (type, name, days, method, extra = {}) => ({id:uid(), example:true, type, name, sow:d(days), method, count:1, location:'', ...extra});
+  return [
+    mk('tomato','Cherry tomatoes',29,'tray',{count:30, location:'Balcony'}),
+    mk('cucumber','Cucumbers',44,'ground',{count:3, location:'Back fence'}),
+    mk('banana','Banana',318,'ground',{location:'Side yard'}),
+    mk('carrot','Carrots',52,'ground',{count:20, location:'Raised bed'}),
+    mk('mushroom','Oyster mushrooms',32,'bag',{count:2, location:'Store room'}),
+    mk('chili','Chilies',88,'tray',{count:4, location:'Porch'})
+  ];
+}
+function load(){
+  try {
+    const raw = localStorage.getItem(KEY); if(!raw) return false;
+    const d = JSON.parse(raw);
+    if(d.settings) settings = {...settings, ...d.settings};
+    delete settings.anim;
+    if(Array.isArray(d.custom)){ customs = d.custom; customs.forEach(registerCustom); }
+    let ps = Array.isArray(d) ? d : (d.plants || []);
+    if(ps.length && ps.every(p => p.example)) return false;
+    const EN = {'Timun':'Cucumbers','Pisang':'Banana','Cili padi':'Chilies'};
+    ps.forEach(p => { if(p.example && EN[p.name]) p.name = EN[p.name]; });
+    ps.forEach(clean);
+    plants = ps.filter(p => CROPS[p.type]);
+    return true;
+  } catch(e){ return false; }
+}
+function clean(p){
+  p.id = p.id || uid();
+  if(p.method === 'jar') p.method = 'tray';
+  const P = CROPS[p.type];
+  if(P && !P.methods.includes(p.method)) p.method = P.method;
+  delete p.logs; delete p.checks; delete p.transplanted;
+}
+const byId = id => plants.find(p => p.id === id);
+const needsMove = p => p.method === 'tray' && !!CROPS[p.type].transplantDay;
+const movedByDate = p => diff(p.sow, today()) >= CROPS[p.type].transplantDay;
+const containerOf = p => p.method === 'ground' ? 'ground' : p.method === 'tray' && (!CROPS[p.type].transplantDay || !movedByDate(p)) ? 'tray' : 'pot';
+
+function stageInfo(p){
+  const P = CROPS[p.type], raw = diff(p.sow, today()), day = Math.max(0, raw);
+  const st = P.stages, last = st[st.length-1];
+  let i = st.findIndex(s => day >= s.start && day < s.end);
+  if(i < 0) i = st.length - 1;
+  const s = st[i];
+  return {P, raw, day, i, s, t: clamp((day - s.start)/(s.end - s.start), 0, 1), week: wk(day), total: last.end, planned: raw < 0, over: day >= last.end};
+}
+function nextLine(p, si){
+  const P = si.P;
+  if(si.planned) return {txt:`Starts in ${plural(-si.raw,'day')}`};
+  if(needsMove(p) && si.day <= P.transplantDay){
+    const n = P.transplantDay - si.day;
+    return n > 0 ? {txt:`Move to a pot in ${plural(n,'day')}`, warn: n <= 3} : {txt:'Move to a pot today', warn:true};
+  }
+  const nx = P.stages[si.i + 1];
+  if(nx) return {txt:`${nx.label} in ${plural(nx.start - si.day,'day')}`};
+  return {txt: si.over ? 'Season finishing' : 'Harvesting'};
+}
+const feedText = P => P.fertEvery ? `Every ${P.fertEvery} days once growing` : 'No feeding needed';
+function methodTip(P, m){
+  if(P.custom) return m === 'tray' ? 'Seedlings start in small cells, then move to a pot once they are big enough.' : m === 'pot' ? 'Stays in the same pot from day one. Easy to move into shade or out of heavy rain.' : 'Planted straight into the bed. Roots spread freely and need less watering.';
+  if(m === 'bag') return 'Mushrooms grow from a ready-made grow bag. Keep it in a cool, shaded, humid corner and mist it daily.';
+  if(m === 'tray') return P.transplantDay
+    ? `Seedlings start in small cells where they are easy to water and protect. Move them to a pot around day ${P.transplantDay} (week ${wk(P.transplantDay)}).`
+    : `${P.name} does not like being moved, so a pot or the ground is a better start.`;
+  if(m === 'pot') return `Stays in the same pot from day one (${P.pot.toLowerCase()}). Easy to move into shade or out of heavy rain. ${P.potNote || 'Pots dry out faster, so check the soil daily.'}`;
+  return `Planted straight into the bed. Roots spread freely and need less watering, but heavy rain can waterlog it, so a raised bed helps. ${P.groundNote || ''}`.trim();
+}
+
+/* ================= Shared pieces ================= */
+function header(){
+  const lib = ui.view === 'library';
+  return `<header class="top"><h1>Garden<i>Books</i></h1>
+    <div class="top-r">
+      <div class="switch-view" role="group" aria-label="Choose a view">
+        <button data-act="tab" data-v="garden" aria-pressed="${!lib}">Tracks</button>
+        <button data-act="tab" data-v="library" aria-pressed="${lib}">Library</button>
+      </div>
+      <button class="icon-btn" data-act="settings" aria-label="Settings">${ICON.gear}</button>
+    </div></header>`;
+}
+const subHeader = () => settings.stickyTop ? header() : '<div class="no-top"></div>';
+function chip(s){ return `<span class="chip"><i style="background:var(--st-${s.key})"></i>${esc(s.label)}</span>`; }
+function miniTimeline(si){
+  const segs = si.P.stages.map(s => `<span style="flex:${s.end - s.start};background:var(--st-${s.key});opacity:${s.end <= si.day ? .4 : 1}"></span>`).join('');
+  return `<div class="mini-wrap" aria-hidden="true"><div class="mini-tl">${segs}</div><span class="now" style="left:${clamp(si.day / si.total * 100, 0, 100)}%"></span></div>`;
+}
+function svgFor(p, si){ if(si.P.custom) return customPic(si.P, si.i); return pic(si.P, ORD[si.s.key], si.planned ? 0 : si.t, {container: containerOf(p)}); }
+function meter(P, opts = {}){
+  const total = P.stages[P.stages.length-1].end, day = opts.day;
+  const segs = P.stages.map(s => `<span style="flex:${s.end - s.start};background:var(--st-${s.key});opacity:${day != null && s.end <= day ? .4 : 1}"></span>`).join('');
+  const now = day != null ? `<span class="tl-now" style="left:${clamp(day/total*100,0,100)}%"><b>Today</b></span>` : '';
+  const pin = opts.showMove && P.transplantDay ? `<span class="tl-pin" style="left:${P.transplantDay/total*100}%">↑ Move to pot</span>` : '';
+  return `<div class="tl-wrap tl-anim ${day == null ? 'no-today' : ''} ${pin ? '' : 'no-pin'}"><div class="tl">${segs}</div>${now}${pin}</div>`;
+}
+function packet(P, small){
+  return `<div class="packet ${small ? 'small' : ''}" style="--pk:${P.packet}">
+    <div class="pk-art">${P.custom ? customPic(P) : pic(P, 6, .7, {container:'none'})}</div>
+    <div class="pk-name">${esc(P.name)}</div>
+    <div class="pk-band"><span style="background:${CAT_COLOR[P.cat]}">${esc(CAT_SHORT[P.cat])}</span><span style="background:${FROM_COLOR[P.from]}">${esc(P.band === 'Seed potatoes' ? 'Tubers' : P.band === 'Grow bag' ? 'Spawn' : P.band)}</span></div>
+  </div>`;
+}
+function stageRows(P, sow, day, showMove){
+  const rows = [];
+  P.stages.forEach((s, i) => {
+    const cls = day == null ? '' : (day >= s.start && day < s.end) || (i === P.stages.length-1 && day >= s.end) ? 'now' : day >= s.end ? 'done' : '';
+    const w = `Week ${wk(s.start)}${Math.ceil(s.end/7) > wk(s.start) ? '–' + Math.ceil(s.end/7) : ''}`;
+    rows.push(`<li class="${cls}"><span class="dot" style="background:var(--st-${s.key})"></span><span class="sl">${esc(s.label)}</span><span class="sd">${sow ? `${fmt(addDays(sow, s.start))} – ${fmt(addDays(sow, s.end - 1))}` : `day ${s.start}–${s.end}`}</span><span class="sw">${w}</span></li>`);
+    if(showMove && P.transplantDay && P.transplantDay >= s.start && P.transplantDay < s.end){
+      rows.push(`<li class="event ${day != null && day > P.transplantDay ? 'done' : ''}"><span class="dot"></span><span class="sl">Move to a pot</span><span class="sd">${sow ? 'around ' + fmt(addDays(sow, P.transplantDay)) : 'day ' + P.transplantDay}</span><span class="sw">Week ${wk(P.transplantDay)}</span></li>`);
+    }
+  });
+  return `<ol class="stages">${rows.join('')}</ol>`;
+}
+
+function filterBar(view, crops){
+  const f = ui.f[view];
+  const dd = (key, label, val) => `<button class="dd ${val !== 'all' ? 'on' : ''}" data-act="filter-sheet" data-view="${view}" data-key="${key}"><span>${label}</span><b>${esc(val === 'all' ? 'All' : key === 'cat' ? CAT[val] : FROM[val])}</b>${ICON.chev}</button>`;
+  return `<div class="filters">${dd('cat', 'Type', f.cat)}${dd('from', 'Grown from', f.from)}${f.cat !== 'all' || f.from !== 'all' ? `<button class="dd-clear" data-act="filter-clear" data-view="${view}">Clear</button>` : ''}</div>`;
+}
+function filterSheet(view, key){
+  const f = ui.f[view], all = Object.values(CROPS);
+  const opts = key === 'cat' ? CAT : FROM, colors = key === 'cat' ? CAT_COLOR : FROM_COLOR;
+  const count = v => all.filter(P => (v === 'all' || P[key] === v) && (key === 'cat' ? (f.from === 'all' || P.from === f.from) : (f.cat === 'all' || P.cat === f.cat))).length;
+  const item = (v, label) => `<button class="opt" data-act="filter" data-view="${view}" data-key="${key}" data-val="${v}" aria-pressed="${f[key] === v}">${v === 'all' ? '<i class="all"></i>' : `<i style="background:${colors[v]}"></i>`}<span>${esc(label)}</span><small>${count(v)}</small>${f[key] === v ? ICON.check : ''}</button>`;
+  openSheet(`${sheetHead(key === 'cat' ? 'Type' : 'Grown from', '')}<div class="opts">${item('all', 'All')}${Object.entries(opts).map(([v, l]) => item(v, l)).join('')}</div>`);
+  ui.sheet = 'filter';
+}
+const passes = (view, P) => { const f = ui.f[view]; return (f.cat === 'all' || P.cat === f.cat) && (f.from === 'all' || P.from === f.from); };
+const noMatch = view => `<div class="no-match">Nothing here for this filter. <button class="btn" style="margin-left:6px" data-act="filter-clear" data-view="${view}">Show all</button></div>`;
+
+/* ================= Views ================= */
+function renderGarden(){
+  let h = header();
+  if(plants.some(p => p.example)){
+    h += `<div class="note"><p>These are example plants so you can see how tracking works.</p><button class="btn" data-act="clear-examples">Clear examples</button></div>`;
+  }
+  if(!plants.length){
+    return h + `<div class="empty"><h2>Nothing tracked yet</h2><p>Pick a plant, enter the day you planted it, and every stage is mapped out week by week.</p><button class="btn green" data-act="add">Add your first plant</button></div>`;
+  }
+  const sorted = [...plants].sort((a,b) => a.sow.localeCompare(b.sow));
+  return h + `<div class="grid">${sorted.map(plantCard).join('')}<button class="add-card" data-act="add">${ICON.plus}Add a plant</button></div>`;
+}
+function plantCard(p){
+  const si = stageInfo(p), nx = nextLine(p, si);
+  return `<button class="gcard" style="--pk:${si.P.packet}" data-act="open" data-id="${p.id}" aria-label="Open ${esc(p.name)}">
+    <div class="art">${svgFor(p, si)}</div>
+    <div class="body">
+      <h3>${esc(p.name)}</h3>
+      <span class="meta">${si.planned ? `Starts ${fmt(p.sow)}` : `Day ${si.day} · Week ${si.week}`}</span>
+      ${chip(si.s)}
+      ${miniTimeline(si)}
+      <span class="next ${nx.warn ? 'warn' : ''}">${esc(nx.txt)}</span>
+    </div></button>`;
+}
+
+function renderDetail(){
+  const p = byId(ui.detail);
+  if(!p){ ui.detail = null; return renderGarden(); }
+  const si = stageInfo(p), P = si.P, nx = nextLine(p, si);
+  const showMove = needsMove(p);
+  const where = [P.name, showMove ? (movedByDate(p) ? 'Moved to a pot' : 'Seed tray') : METHOD[p.method], p.location, p.count > 1 ? p.count + ' plants' : ''].filter(Boolean).map(esc).join(' · ');
+  const last = P.stages[P.stages.length-1];
+  return subHeader() + `<button class="back" data-act="back">${ICON.back} Tracks</button><div class="bento">
+    <div class="tile t4 hero ${hasPhoto(P) ? 'photo' : ''}" style="--pk:${P.packet}">
+      <div class="art">${svgFor(p, si)}</div>
+      <div><p class="kicker">${where}</p><h2>${esc(p.name)}</h2>
+        <p class="kicker" style="margin-top:6px">Planted ${parse(p.sow).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</p>
+        <div class="acts"><button class="btn" data-act="edit-plant">Edit</button></div></div>
+    </div>
+    <div class="tile t2 tint mint"><span class="eyebrow">${si.planned ? 'Starts in' : 'Growing for'}</span><span class="huge" data-count="${si.planned ? -si.raw : si.day}">${si.planned ? -si.raw : si.day}</span><span class="sub">${si.planned ? 'days' : `days · week ${si.week}`}</span></div>
+    <div class="tile t2 tint lav"><span class="eyebrow">Stage now</span><p class="big-line">${esc(si.s.label)}</p><span class="sub ${nx.warn ? 'warn' : ''}">${esc(nx.txt)}</span></div>
+    ${si.s.tip ? `<div class="tile t4 tint butter tip-tile">${ICON.garden}<p>${esc(si.s.tip)}</p></div>` : ''}
+    <div class="tile t4">
+      <h3>Growing timeline</h3>
+      ${meter(P, {day: si.day, showMove})}
+      <div class="tl-ends"><span>Planted ${fmt(p.sow)}</span><span>${P.custom ? esc(last.label) : 'Harvest'} from ${fmt(addDays(p.sow, last.start))}</span></div>
+      ${stageRows(P, p.sow, si.day, showMove)}
+    </div>
+    ${P.custom ? '' : `<div class="tile t2"><span class="eyebrow ic">${ICON.sun}Light</span><p>${esc(P.sun)}</p></div>
+    <div class="tile t2"><span class="eyebrow ic">${ICON.drop}Water</span><p>${esc(P.water)}</p></div>
+    <div class="tile t2"><span class="eyebrow ic">${ICON.pot}Space</span><p>${esc(P.pot)}</p></div>
+    <div class="tile t2"><span class="eyebrow ic">${ICON.feed}Feed</span><p>${feedText(P)}</p></div>`}
+    <button class="tile t4 lib-link" data-act="to-lib" data-k="${P.id}">${ICON.book}<span><b>${esc(P.name)} in the Library</b><small>${P.custom ? 'Stages and photos' : 'Genetics and saving seed'}</small></span>${ICON.back}</button>
+  </div>
+  <div class="danger-zone">${ui.confirm === 'del' ? `<button class="btn" data-act="cancel">Keep it</button><button class="btn danger" data-act="del">Yes, remove ${esc(p.name)}</button>` : `<button class="btn danger" data-act="del">Stop tracking</button>`}</div>`;
+}
+
+function renderLibrary(){
+  if(ui.crop && CROPS[ui.crop]) return renderCropPage(ui.crop);
+  const list = Object.entries(CROPS).filter(([k, P]) => passes('library', P));
+  return header() + filterBar('library', Object.values(CROPS)) + `<div class="shelf">${list.length ? '' : noMatch('library')}${list.map(([k, P]) => `<button class="pk-btn" data-act="crop" data-k="${k}" aria-label="${esc(P.name)} details">${packet(P)}</button>`).join('')}<button class="pk-btn" data-act="custom-new"><div class="packet own-new">${ICON.plus}<span>Your own plant</span></div></button></div>`;
+}
+function renderCropPage(k){
+  const P = CROPS[k], last = P.stages[P.stages.length-1];
+  return subHeader() + `<button class="back" data-act="lib-back">${ICON.back} Library</button>
+    <div class="bento">
+      <div class="tile t4 crop-hero" style="--pk:${P.packet}">
+        <div class="crop-pk">${packet(P)}</div>
+        <div>
+          ${P.custom ? `<p class="own-note">Your own plant</p>` : ''}<ul class="care-mini" style="margin-top:4px">${P.custom ? '' : `
+            <li title="Difficulty"><span class="sr">Difficulty: </span>${ICON.grade}<span>${gradeBadge(P)}</span></li>
+            <li title="Light"><span class="sr">Light: </span>${ICON.sun}<span>${esc(P.sun)}</span></li>
+            <li title="Water"><span class="sr">Water: </span>${ICON.drop}<span>${esc(P.water)}</span></li>
+            <li title="Space"><span class="sr">Space: </span>${ICON.pot}<span>${esc(P.pot)}</span></li>
+            <li title="Feed"><span class="sr">Feed: </span>${ICON.feed}<span>${P.fertEvery ? `Every ${P.fertEvery} days` : 'No feeding needed'}</span></li>`}
+          </ul>
+          <div class="hero-acts"><button class="btn green" data-act="add" data-k="${k}">Plant this</button>${P.custom ? `<button class="btn" data-act="custom-edit" data-k="${k}">Edit</button>` : ''}</div></div>
+      </div>
+      <div class="tile t4">
+        <h3>Stages</h3>
+        ${meter(P, {showMove: true})}
+        <div class="tl-ends"><span>Day 0</span><span>${P.custom ? esc(last.label) : 'Harvest'} from week ${wk(last.start)}</span></div>
+        ${stageRows(P, null, null, true)}
+      </div>
+      ${familyTile(P)}
+      ${seedTile(P)}
+    </div>`;
+}
+function revealChips(root){
+  root.querySelectorAll('.chips').forEach(row => { const b = row.querySelector('[aria-pressed="true"]'); if(b && b.dataset.val !== 'all') row.scrollLeft = b.offsetLeft - row.clientWidth/2 + b.offsetWidth/2; });
+}
+function pageAnim(kind){
+  const a = $('#app'); a.classList.remove('page-fwd','page-back','page-tab'); void a.offsetWidth; a.classList.add('page-' + kind);
+}
+function render(animate){
+  $('#app').classList.remove('page-fwd','page-back','page-tab');
+  document.body.classList.toggle('compact', settings.layout === 'compact');
+  ['flat','outline','shadow'].forEach(c => document.body.classList.toggle('cards-' + c, (settings.cards || 'shadow') === c));
+  document.body.classList.toggle('anim-on', !!animate);
+  $('#app').innerHTML = ui.view === 'library' ? renderLibrary() : ui.detail ? renderDetail() : renderGarden();
+  revealChips(document);
+  if(!animate) document.querySelectorAll('#app .tl-anim').forEach(el => el.classList.remove('tl-anim'));
+  else countUp();
+}
+function countUp(){
+  const el = document.querySelector('[data-count]'); if(!el) return;
+  const end = +el.dataset.count;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches || end < 2) return;
+  el.classList.add('count-anim');
+  const t0 = performance.now(), dur = 1100;
+  el.textContent = '0';
+  const step = now => { const k = Math.min(1, (now - t0)/dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(end*e); if(k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+/* ================= Sheets ================= */
+function openSheet(html, keepScroll){
+  const root = $('#sheet-root'), open = root.querySelector('.backdrop:not(.closing)');
+  if(open){ const sh = open.querySelector('.sheet'), y = sh.scrollTop; sh.innerHTML = html; sh.scrollTop = keepScroll ? y : 0; return; }
+  root.insertAdjacentHTML('beforeend', `<div class="backdrop" data-act="close-bg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`);
+}
+function closeSheet(){
+  ui.sheet = null;
+  document.querySelectorAll('#sheet-root .backdrop:not(.closing)').forEach(bd => { bd.classList.add('closing'); setTimeout(() => bd.remove(), 220); });
+}
+const sheetHead = (title, lead) => `<div class="grab" aria-hidden="true"></div><div class="sheet-head"><h2>${title || ''}</h2><button class="x" data-act="close" aria-label="Close">${ICON.x}</button></div>${lead ? `<p class="lead">${lead}</p>` : ''}`;
+
+function methodField(k, m){
+  const P = CROPS[k];
+  if(!P.methods.includes(m)) m = P.method;
+  return `<span class="lbl">Started in</span><div class="seg">${P.methods.map(mk => `<input type="radio" name="method" id="m-${mk}" value="${mk}" ${mk === m ? 'checked' : ''}><label for="m-${mk}">${METHOD[mk]}</label>`).join('')}</div>
+    <p class="method-tip" id="m-tip">${ICON.info}<span>${esc(methodTip(P, m))}</span></p>`;
+}
+function plantSheet(opts = {}){
+  const edit = opts.edit ? byId(opts.edit) : null;
+  const k = edit ? edit.type : (opts.k || 'tomato');
+  const pchips = `<div class="chips picker-chips" role="group" aria-label="Show plants of type"><button type="button" data-act="pick-filter" data-val="all" aria-pressed="true">All</button>${Object.keys(CAT).map(c => `<button type="button" data-act="pick-filter" data-val="${c}" aria-pressed="false">${esc(CAT[c])}</button>`).join('')}</div>`;
+  const picker = Object.entries(CROPS).map(([key, P]) => `<div data-cat="${P.cat}"><input type="radio" name="crop" id="crop-${key}" value="${key}" ${key === k ? 'checked' : ''}><label for="crop-${key}">${packet(P, true)}</label></div>`).join('');
+  openSheet(`${sheetHead(edit ? 'Edit plant' : 'Add a plant', edit ? '' : 'Pick what you planted and when. The timeline is worked out for you.')}
+    <div class="field"><span class="lbl">What did you plant?</span>${pchips}<div class="picker">${picker}</div><button type="button" class="link-btn" data-act="custom-new">${ICON.plus}Not listed? Add your own plant</button></div>
+    <div class="field"><label for="f-name">Give it a name</label><input class="input" id="f-name" placeholder="${esc(CROPS[k].name)}" value="${edit ? esc(edit.name) : ''}" maxlength="40"></div>
+    <div class="row">
+      <div class="field"><label for="f-sow">Planted on</label><input class="input" type="date" id="f-sow" value="${edit ? edit.sow : today()}"></div>
+      <div class="field"><label for="f-count">How many</label><input class="input" type="number" id="f-count" min="1" value="${edit ? edit.count : 1}"></div>
+    </div>
+    <div class="field" id="method-field">${methodField(k, edit ? edit.method : CROPS[k].method)}</div>
+    <div class="field"><label for="f-loc">Where is it? (optional)</label><input class="input" id="f-loc" placeholder="Balcony, porch, back yard" value="${edit ? esc(edit.location) : ''}" maxlength="40"></div>
+    <div class="sheet-actions"><button class="btn" data-act="close">Cancel</button><button class="btn green" data-act="save-plant" ${edit ? `data-id="${edit.id}"` : ''}>${edit ? 'Save changes' : 'Start tracking'}</button></div>`);
+  ui.sheet = 'plant';
+  const sel = $('#crop-' + k); if(sel) sel.parentElement.scrollIntoView({block:'nearest'});
+}
+
+function settingsSheet(){
+  const seg = (name, opts, cur) => `<div class="seg">${Object.entries(opts).map(([v,l]) => `<input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${v === cur ? 'checked' : ''}><label for="${name}-${v}">${l}</label>`).join('')}</div>`;
+  const keepS = ui.sheet === 'settings';
+  openSheet(`${sheetHead('Settings', '')}
+    <div class="set-group">
+      <div class="set-col"><b>Layout</b><span>Compact fits more plants on your Tracks screen with smaller cards.</span>${seg('s-layout', {default:'Default', compact:'Compact'}, settings.layout)}</div>
+      <div class="set-col"><b>Card style</b><span>How cards and panels stand out from the page.</span>${seg('s-cards', {flat:'Flat', outline:'Outline', shadow:'Shadow'}, settings.cards || 'shadow')}</div>
+      <div class="set-col"><b>Pictures</b><span>Show the plant as it grows, or just what you harvest.</span>${seg('s-pics', {plant:'Growing plant', harvest:'Harvest only'}, settings.pics)}</div>
+      <div class="set-row"><div><b>Top bar on detail pages</b><span>Show the GardenBooks bar on plant and library detail pages. When off, those pages show only the back button.</span></div><label class="toggle"><input type="checkbox" id="s-sticky" ${settings.stickyTop ? 'checked' : ''} aria-label="Top bar on detail pages"><span></span></label></div>
+    </div>
+    <h3 class="sec">Backup and restore</h3>
+    <p class="lead">Your plants are saved on this device only. Save a backup file and keep it somewhere safe, like Google Drive. To restore, open that file.</p>
+    <div class="sheet-actions" style="justify-content:flex-start;margin:0"><button class="btn green" data-act="save-file">Save backup</button><button class="btn" data-act="open-file">Restore backup</button></div>
+    <input type="file" id="restore-file" accept=".json,.txt,application/json,text/plain" hidden>
+    <h3 class="sec">Start over</h3>
+    <p class="lead">Removes every plant you track from this device. This cannot be undone.</p>
+    <div class="sheet-actions" style="justify-content:flex-start"><button class="btn danger" data-act="wipe">${ui.confirm === 'wipe' ? 'Yes, delete everything' : 'Delete all plants'}</button></div>
+    <p class="fine">GardenBooks · ${plural(Object.keys(CROPS).length,'crop')} in the library · timings for Malaysia's warm, wet climate</p>`, keepS);
+  ui.sheet = 'settings';
+}
+function restoreFrom(text){
+  try {
+    const d = JSON.parse(text);
+    const ps = Array.isArray(d) ? d : d.plants;
+    if(!Array.isArray(ps) || ps.some(p => !p.sow)) throw 0;
+    if(Array.isArray(d.custom)){ customs.forEach(c => delete CROPS[c.id]); customs = d.custom; customs.forEach(registerCustom); }
+    const kept = ps.filter(p => CROPS[p.type]); kept.forEach(clean);
+    if(d.settings){ settings = {...settings, ...d.settings}; delete settings.anim; }
+    plants = kept; save(); closeSheet(); ui.detail = null; ui.crop = null; ui.view = 'garden'; render();
+    toast(kept.length < ps.length ? `Restored ${plural(kept.length,'plant')}; ${ps.length - kept.length} not in the library` : `Restored ${plural(kept.length,'plant')}`);
+  } catch(err){ toast('That file is not a GardenBooks backup'); }
+}
+
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+
+/* ================= Android back button ================= */
+function quitSheet(){
+  openSheet(`${sheetHead('Close GardenBooks?', '')}<p class="lead">Your plants are saved. You can pick up where you left off.</p>
+    <div class="sheet-actions"><button class="btn" data-act="close">Stay</button><button class="btn green" data-act="quit">Close app</button></div>`);
+  ui.sheet = 'quit';
+}
+function goBack(){
+  if(ui.sheet){ closeSheet(); return; }
+  if(ui.detail){ ui.detail = null; ui.confirm = null; render(); window.scrollTo(0,0); pageAnim('back'); return; }
+  if(ui.crop){ ui.crop = null; render(); window.scrollTo(0,0); pageAnim('back'); return; }
+  quitSheet();
+}
+if(window.Capacitor?.isNativePlatform?.()){
+  try { Capacitor.addListener('App', 'backButton', goBack); } catch(e){}
+}
+
+/* ================= Events ================= */
+document.addEventListener('change', e => {
+  const el = e.target;
+  if(el.name === 'crop'){
+    const P = CROPS[el.value]; $('#f-name').placeholder = P.name;
+    const cur = (document.querySelector('input[name="method"]:checked') || {}).value;
+    $('#method-field').innerHTML = methodField(el.value, P.methods.includes(cur) ? cur : P.method);
+  }
+  if(el.name === 'method'){
+    const k = document.querySelector('input[name="crop"]:checked').value;
+    $('#m-tip').innerHTML = `${ICON.info}<span>${esc(methodTip(CROPS[k], el.value))}</span>`;
+  }
+  if(el.name === 's-layout'){ settings.layout = el.value; save(); render(); }
+  if(el.name === 's-cards'){ settings.cards = el.value; save(); render(); }
+  if(el.name === 's-pics'){ settings.pics = el.value; save(); render(); }
+  if(el.id === 'f-from'){ ui.f[el.dataset.view].from = el.value; render(); }
+  if(el.id === 's-sticky'){ settings.stickyTop = el.checked; save(); render(); }
+  if(el.dataset.ph != null && el.files && el.files[0]){
+    syncDraft(); const key = el.dataset.ph;
+    shrinkPhoto(el.files[0]).then(url => { if(!ui.draft) return; if(key === 'cover') ui.draft.cover = url; else ui.draft.stages[+key].photo = url; customSheet(null, true); }).catch(() => toast('Could not read that photo'));
+  }
+  if(el.classList.contains('cs-days')){ syncDraft(); customSheet(null, true); }
+  if(el.id === 'restore-file' && el.files[0]){ const r = new FileReader(); r.onload = () => restoreFrom(r.result); r.readAsText(el.files[0]); }
+});
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]'); if(!el) return;
+  const act = el.dataset.act;
+  if(act === 'close-bg'){ if(e.target === el) closeSheet(); return; }
+  switch(act){
+    case 'tab': ui.view = el.dataset.v; ui.detail = null; ui.crop = null; ui.confirm = null; render(); window.scrollTo(0,0); pageAnim('tab'); break;
+    case 'open': ui.detail = el.dataset.id; ui.confirm = null; render(true); window.scrollTo(0,0); pageAnim('fwd'); break;
+    case 'back': ui.detail = null; ui.confirm = null; render(); window.scrollTo(0,0); pageAnim('back'); break;
+    case 'add': ui.confirm = null; plantSheet({k: el.dataset.k}); break;
+    case 'edit-plant': plantSheet({edit: ui.detail}); break;
+    case 'close': closeSheet(); break;
+    case 'crop': ui.crop = el.dataset.k; render(true); window.scrollTo(0,0); pageAnim('fwd'); break;
+    case 'lib-back': ui.crop = null; render(); window.scrollTo(0,0); pageAnim('back'); break;
+    case 'settings': ui.confirm = null; settingsSheet(); break;
+    case 'filter': { const f = ui.f[el.dataset.view]; f[el.dataset.key] = el.dataset.val; closeSheet(); render(); break; }
+    case 'filter-sheet': filterSheet(el.dataset.view, el.dataset.key); break;
+    case 'filter-clear': ui.f[el.dataset.view] = {cat:'all', from:'all'}; render(); break;
+    case 'pick-filter': {
+      el.parentElement.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === el));
+      document.querySelectorAll('.picker > div').forEach(d => d.classList.toggle('hide', el.dataset.val !== 'all' && d.dataset.cat !== el.dataset.val));
+      const cur = document.querySelector('input[name="crop"]:checked');
+      if(cur && cur.parentElement.classList.contains('hide')){
+        const first = document.querySelector('.picker > div:not(.hide) input');
+        if(first){ first.checked = true; first.dispatchEvent(new Event('change', {bubbles:true})); }
+      }
+      break;
+    }
+    case 'quit': closeSheet(); try { Capacitor.nativePromise('App', 'exitApp', {}); } catch(e){} break;
+    case 'to-lib': ui.view = 'library'; ui.detail = null; ui.confirm = null; ui.crop = el.dataset.k; render(true); window.scrollTo(0,0); pageAnim('fwd'); break;
+    case 'custom-new': ui.confirm = null; customSheet(); break;
+    case 'custom-edit': ui.confirm = null; customSheet(el.dataset.k); break;
+    case 'cs-add': syncDraft(); ui.draft.stages.push({label:'', days:14}); customSheet(null, true); setTimeout(() => { const l = [...document.querySelectorAll('.cs-name')].pop(); if(l) l.focus(); }, 60); break;
+    case 'cs-del': syncDraft(); ui.draft.stages.splice(+el.dataset.i, 1); customSheet(null, true); break;
+    case 'cs-remove': {
+      if(ui.confirm !== 'cdel'){ syncDraft(); ui.confirm = 'cdel'; customSheet(null, true); break; }
+      const id = ui.draft.id; customs = customs.filter(x => x.id !== id); plants = plants.filter(p => p.type !== id); delete CROPS[id];
+      ui.confirm = null; ui.draft = null; save(); closeSheet(); ui.view = 'library'; ui.crop = null; ui.detail = null; render(); pageAnim('back'); toast('Plant deleted');
+      break;
+    }
+    case 'cs-save': {
+      syncDraft(); const d = ui.draft;
+      if(!d.name.trim()){ toast('Give your plant a name'); $('#c-name').focus(); break; }
+      d.name = d.name.trim(); d.stages.forEach((st, i) => st.label = st.label.trim() || `Stage ${i + 1}`);
+      const isNew = !d.id; if(isNew) d.id = 'c_' + uid();
+      const i = customs.findIndex(x => x.id === d.id); if(i >= 0) customs[i] = d; else customs.push(d);
+      registerCustom(d); ui.draft = null; ui.confirm = null;
+      if(!save()) break;
+      closeSheet(); ui.view = 'library'; ui.detail = null; ui.crop = d.id; render(true); window.scrollTo(0,0); pageAnim('fwd');
+      toast(isNew ? `${d.name} added to the library` : 'Changes saved');
+      break;
+    }
+    case 'clear-examples': plants = plants.filter(p => !p.example); save(); render(); toast('Examples removed'); break;
+    case 'save-plant': {
+      const type = document.querySelector('input[name="crop"]:checked').value;
+      const vals = {type, name: $('#f-name').value.trim() || CROPS[type].name, sow: $('#f-sow').value || today(),
+        method: document.querySelector('input[name="method"]:checked').value, count: Math.max(1, +$('#f-count').value || 1), location: $('#f-loc').value.trim()};
+      if(el.dataset.id){ const p = byId(el.dataset.id); Object.assign(p, vals); p.example = false; save(); closeSheet(); render(); toast('Changes saved'); }
+      else {
+        const p = {id: uid(), ...vals};
+        plants.push(p); save(); closeSheet(); ui.view = 'garden'; ui.crop = null; ui.detail = p.id; render(true); window.scrollTo(0,0); toast(`${p.name} added`);
+      }
+      break;
+    }
+    case 'del':
+      if(ui.confirm === 'del'){ plants = plants.filter(p => p.id !== ui.detail); ui.detail = null; ui.confirm = null; save(); render(); toast('No longer tracking'); }
+      else { ui.confirm = 'del'; render(); }
+      break;
+    case 'cancel': ui.confirm = null; render(); break;
+    case 'save-file': {
+      if(window.Capacitor?.isNativePlatform?.()){
+        const name = `gardenbooks-backup-${today()}.json`;
+        try {
+          const w = await Capacitor.nativePromise('Filesystem','writeFile',{path:name, data:JSON.stringify({v:4, plants, settings, custom: customs}, null, 1), directory:'CACHE', encoding:'utf8'});
+          await Capacitor.nativePromise('Share','share',{title:'GardenBooks backup', files:[w.uri], dialogTitle:'Save or send your backup'});
+        } catch(err){ if(!/cancel/i.test(String(err && err.message))) toast('Could not save the backup file'); }
+        break;
+      }
+      const blob = new Blob([JSON.stringify({v:4, plants, settings, custom: customs}, null, 1)], {type:'application/json'});
+      const fname = `gardenbooks-backup-${today()}.json`;
+      try {
+        const file = new File([blob], fname, {type:'application/json'});
+        if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:'GardenBooks backup'}); break; }
+      } catch(err){ if(err && err.name === 'AbortError') break; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `gardenbooks-backup-${today()}.json`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); toast('Backup file saved');
+      break;
+    }
+    case 'open-file': $('#restore-file').click(); break;
+    case 'wipe':
+      if(ui.confirm === 'wipe'){ plants = []; save(); ui.confirm = null; closeSheet(); ui.detail = null; ui.crop = null; render(); toast('All plants deleted'); }
+      else { ui.confirm = 'wipe'; settingsSheet(); }
+      break;
+  }
+});
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && ui.sheet) closeSheet(); });
+
+if(!load()){ plants = examples(); save(); }
+render();
+</script>
+<script>
+if('serviceWorker' in navigator && !window.Capacitor?.isNativePlatform?.()){ window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {})); }
+</script>
+</body>
+</html>
